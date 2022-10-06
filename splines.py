@@ -13,7 +13,7 @@ import dask.dataframe as dd
 
 warnings.filterwarnings("ignore")
 sns.set()
-from bioimage_phenotyping import Cellesce
+from bioimage_phenotyping import Cellprofiler
 
 # plt.ion()
 
@@ -108,11 +108,11 @@ def metadata(x):
 
 # %%
 from sklearn.metrics.pairwise import euclidean_distances
-from bioimage_phenotyping import Cellesce
+from bioimage_phenotyping import Cellprofiler
 import bioimage_phenotyping.shapes as shapes
 
 df_splinedist = (
-    Cellesce(**kwargs_splinedist)
+    Cellprofiler(**kwargs_splinedist)
     .get_data()
     .apply(shapes.align_coords_to_origin_np, axis=1, raw=True)
     .cellesce.preprocess()
@@ -176,7 +176,7 @@ if not TEST_ROT:
 # rows, features = df_splinedist.shape
 
 df_cellprofiler = (
-    Cellesce(**kwargs_cellprofiler)
+    Cellprofiler(**kwargs_cellprofiler)
     .get_data()
     .cellesce.preprocess()
     .cellesce.clean()

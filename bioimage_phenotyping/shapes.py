@@ -18,7 +18,7 @@ from dask import delayed
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 from distributed import Client
-from bioimage_phenotyping import Cellesce
+from bioimage_phenotyping import Cellprofiler
 
 
 def augment_at_theta(df, function, i, theta):

@@ -12,7 +12,7 @@ from sklearn import model_selection
 import pathlib
 
 sns.set()
-from bioimage_phenotyping import Cellesce
+from bioimage_phenotyping import Cellprofiler
 
 VARIABLES = ["Conc /uM", "Date", "Drug"]
 SAVE_FIG = True
@@ -96,8 +96,8 @@ def metadata(x):
 
 import random
 
-from bioimage_phenotyping import Cellesce
-df = Cellesce(**kwargs).get_data().cellesce.clean().cellesce.preprocess()
+from bioimage_phenotyping import Cellprofiler
+df = Cellprofiler(**kwargs).get_data().cellesce.clean().cellesce.preprocess()
 rows,features = df.shape
 df = df.iloc[:,random.sample(range(0, features), 32)]
 

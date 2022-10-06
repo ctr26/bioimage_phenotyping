@@ -1,1 +1,1 @@
-from .dataset import Cellesce
+from .dataset import Cellprofiler

@@ -48,7 +48,7 @@ import pandas as pd
 
 
 @pd.api.extensions.register_dataframe_accessor("cellesce")
-class CellesceDataFrame:
+class CellprofilerDataFrame:
     def __init__(self, df):
         self.df = df
 
@@ -416,7 +416,7 @@ class CellesceDataFrame:
     #     return report_tall
 
 
-class Cellesce(pd.DataFrame):
+class Cellprofiler(pd.DataFrame):
     def __init__(
         self,
         *args,
@@ -438,7 +438,7 @@ class Cellesce(pd.DataFrame):
         # sns.set()
 
         np.random.seed(42)
-        # super(Cellesce,  self).__init__()
+        # super(Cellprofiler,  self).__init__()
         # self.df = pd.read_csv(nuclei_file_path)
         # print(data_folder)
         attrs = {
@@ -456,14 +456,14 @@ class Cellesce(pd.DataFrame):
             "regex_pattern": regex_pattern,
             "index_headers": object_headers + filename_headers,
         }
-        super(Cellesce, self).__init__(*args)
+        super(Cellprofiler, self).__init__(*args)
         self.attrs = attrs
 
         # print(self.attrs)
         # df = self.get_df()
-        # super(Cellesce, self).__init__(*args,**kwargs)
-        # return CellesceActive
-        # super(Cellesce, self).__init__(,*args, **kwargs)
+        # super(Cellprofiler, self).__init__(*args,**kwargs)
+        # return CellprofilerActive
+        # super(Cellprofiler, self).__init__(,*args, **kwargs)
         # self = pd.DataFrame(df)
         # self.attrs.update(vars)
         # self.update(df)
@@ -497,18 +497,18 @@ class Cellesce(pd.DataFrame):
             .pipe(drop_bad_index)
             .pipe(force_numeric)
         )
-        # df = CellesceDataFrame(df,attrs=self.attrs)
+        # df = CellprofilerDataFrame(df,attrs=self.attrs)
         df
-        # df = CellesceDataFrame(df)
+        # df = CellprofilerDataFrame(df)
         df.attrs.update(self.attrs)
-        # return CellesceDataFrame(df,attrs=self.attrs)
+        # return CellprofilerDataFrame(df,attrs=self.attrs)
         return df
 
     @property
     def _constructor(self):
         # print(self.attrs)
         # print("hello")
-        return Cellesce
+        return Cellprofiler
 
     def get_df(self, data_folder, nuclei_path):
         # return pd.DataFrame()
