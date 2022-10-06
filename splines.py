@@ -1,15 +1,19 @@
-# %%
+# %% Imports
 
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 import pathlib
 import scipy
 import warnings
 from tqdm import tqdm
 import dask.dataframe as dd
+from sklearn import preprocessing
+
+from bioimage_phenotyping.shapes import df_to_distance_matrix
 
 warnings.filterwarnings("ignore")
 sns.set()
@@ -22,58 +26,10 @@ SAVE_FIG = True
 SAVE_CSV = True
 TEST_ROT = False
 
-# data_folder = "analysed/210720 - ISO49+34 - projection_XY/unet_2022/project_XY_all"
-# data_folder = "analysed/210720 - ISO49+34 - projection_XY/unet_2022/project_XY_objects"
-
-# pd.read_csv("analysed/_2019_cellesce_unet_splineparameters_aligned/raw/projection_XY/Secondary.csv")
-
-kwargs = {
-    "data_folder": "analysed/210720 - ISO49+34 - projection_XY/unet_2022/project_XY_all",
-    "nuclei_path": "object_filteredNuclei.csv",
-}
-kwargs = {
-    "data_folder": "analysed/210720 - ISO49+34 - projection_XY/unet_2022/project_XY_objects",
-    "nuclei_path": "Secondary.csv",
-}
-
-
-kwargs = {
-    "data_folder": "analysed/_2019_cellesce_unet_splineparameters_aligned/raw/projection_XY/",
-    "nuclei_path": "Secondary.csv",
-}
-
-
-kwargs = {
-    "data_folder": "analysed/_2019_cellesce_unet_splineparameters_aligned/raw/projection_XY/",
-    "nuclei_path": "Secondary.csv",
-}
-
-kwargs_cellprofiler = {
-    "data_folder": "analysed/210720 - ISO49+34 - projection_XY/unet_2022/project_XY_objects",
-    "nuclei_path": "object_filteredNuclei.csv",
-}
-
-
-# kwargs_splinedist = {
-#     "data_folder": "analysed/cellprofiler",
-#     "nuclei_path": "objects_FilteredNuclei.csv",
-# }
-
-
-kwargs_splinedist = {
-    "data_folder": "analysed/cellesce_splinedist_controlpoints",
-    "nuclei_path": "Secondary.csv",
-}
-
 kwargs_splinedist = {
     "data_folder": "old_results/control_points",
     "nuclei_path": "objects_FilteredNuclei.csv",
 }
-
-# kwargs_cellprofiler = {
-#     "data_folder": "analysed/cellprofiler/splinedist",
-#     "nuclei_path": "objects_FilteredNuclei.csv",
-# }
 
 
 kwargs_cellprofiler = {
@@ -81,14 +37,7 @@ kwargs_cellprofiler = {
     "nuclei_path": "objects_FilteredNuclei.csv",
 }
 
-# %%
-# kwargs_cellprofiler = {
-#     "data_folder": "analysed/cellprofiler/splinedist_32",
-#     "nuclei_path": "objects_FilteredNuclei.csv",
-# }
-
-kwargs = kwargs_splinedist
-kwargs = kwargs_cellprofiler
+# %% Helper functions
 
 
 def save_csv(df, path):
@@ -106,7 +55,7 @@ def metadata(x):
     return path
 
 
-# %%
+# %% Load spline (control_points) dataset
 from sklearn.metrics.pairwise import euclidean_distances
 from bioimage_phenotyping import Cellprofiler
 import bioimage_phenotyping.shapes as shapes
@@ -122,7 +71,11 @@ df_splinedist = (
     # .apply(shapes.align_coords_to_origin_np, axis=1, raw=True)
     .sample(frac=1)
 )
-df_splinedist
+
+
+df_distance_matrix = (df_splinedist.pipe(df_to_distance_matrix)).rename(
+    index={"SplineDist": "SplineDist Dist"}, level="Features"
+)
 
 # %%
 
@@ -144,36 +97,6 @@ plt.scatter(x.iloc[0], y.iloc[0])
 if not TEST_ROT:
     plt.close()
 # %%
-# # %%
-# # %%
-# # distogram.flatten()
-# # distogram = sklearn.metrics.pairwise.euclidean_distances(df.iloc[[0]].T)
-# df_sorted = df_splinedist.reindex(
-#     np.array(sorted(df_splinedist.columns.astype(np.int))).astype(np.str), axis=1
-# )
-# df_dist = df_sorted.apply(
-#     lambda x: euclidean_distances(np.array(x).reshape(-1, 1)).flatten(),
-#     axis=1,
-#     result_type="expand",
-# )
-# # %%
-# euclid = euclidean_distances(np.array(df_sorted.iloc[0]).reshape(-1, 1))
-
-# # %%
-
-# df_dist = df_sorted.apply(
-#     lambda x: euclidean_distances(np.array([x[0::2], x[1::2]]).T).flatten(),
-#     axis=1,
-#     result_type="expand",
-# )
-
-
-# df_dist.columns = df_dist.columns.astype(str)
-# # df_dist = (df_sorted
-# #             .apply(lambda x: euclidean_distances(np.array([x[0::2],x[1::2]]).T,[[0,0]])
-# #             .flatten(),axis=1,result_type="expand"))
-# df_splinedist = df_dist
-# rows, features = df_splinedist.shape
 
 df_cellprofiler = (
     Cellprofiler(**kwargs_cellprofiler)
@@ -185,19 +108,31 @@ df_cellprofiler = (
     # .sample(32,axis=1,random_state=42)
 )
 df_cellprofiler.columns = df_cellprofiler.columns.str.replace("AreaShape_", "")
-df = pd.concat([df_cellprofiler, df_splinedist])
+df = pd.concat([df_cellprofiler, df_splinedist, df_distance_matrix])
+
+# pca =  PCA(n_components=10).fit()
+
+pca_spline = PCA(n_components=10).fit(df_splinedist)
+pca_cellprofiler = PCA(n_components=10).fit(df_cellprofiler)
 
 
-pca_spline = PCA(n_components=0.99).fit(df_splinedist)
-pca_cellprofiler = PCA(n_components=0.99).fit(df_cellprofiler)
+# %%
+def pca_fun(df, pca=PCA(n_components=10)):
+    return pd.DataFrame(pca.fit_transform(np.array(df)), index=df.index)
 
-# pd.DataFrame(pca_spline.explained_variance_, columns=["Explained Variance"]).assign(
-#     **{
-#         "Features": "Control points",
-#         "Principal Component": np.arange(0, len(pca_spline.explained_variance_)),
-#     }
-# )
 
+# # pca_cellprofiler = df_cellprofiler.pipe(pca_fun)
+
+# df.groupby(level="Features").pipe(pca_fun)
+# %%
+
+pca_splinedist_df = df_splinedist.pipe(pca_fun, pca_spline)
+pca_cellprofiler_df = df_cellprofiler.pipe(pca_fun, pca_cellprofiler)
+pca_distance_matrix_df = df_distance_matrix.pipe(pca_fun)
+
+pca_df = pd.concat([pca_splinedist_df, pca_cellprofiler_df, pca_distance_matrix_df])
+
+sns.relplot(data=pca_df, x=0, y=1, col="Features", hue="Cell")
 
 exp_var = pd.concat(
     [
