@@ -1,5 +1,5 @@
 import pytest
-from cellesce import Cellesce
+from bioimage_phenotyping import Cellesce
 
 class TestData:
     

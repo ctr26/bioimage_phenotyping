@@ -13,7 +13,7 @@ import dask.dataframe as dd
 
 warnings.filterwarnings("ignore")
 sns.set()
-from cellesce import Cellesce
+from bioimage_phenotyping import Cellesce
 
 # plt.ion()
 
@@ -108,8 +108,8 @@ def metadata(x):
 
 # %%
 from sklearn.metrics.pairwise import euclidean_distances
-from cellesce import Cellesce
-import cellesce.shapes as shapes
+from bioimage_phenotyping import Cellesce
+import bioimage_phenotyping.shapes as shapes
 
 df_splinedist = (
     Cellesce(**kwargs_splinedist)
