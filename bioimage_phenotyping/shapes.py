@@ -19,8 +19,7 @@ import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 from distributed import Client
 from bioimage_phenotyping import Cellprofiler
-from sklearn.metrics.pairwise import euclidean_distances
-
+from sklearn.metrics import pairwise
 def augment_at_theta(df, function, i, theta):
     return (
         df.apply(function, axis=1, theta=theta)
@@ -136,7 +135,7 @@ def augment_repeat(df, fold=1):
 def df_to_distance_matrix(df):
     return (
         df.apply(
-            lambda x: np.tril(euclidean_distances(np.array([x[0::2], x[1::2]]).T))
+            lambda x: np.tril(pairwise.euclidean_distances(np.array([x[0::2], x[1::2]]).T))
             .flatten()
             .flatten(),
             axis=1,
