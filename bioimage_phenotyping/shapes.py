@@ -19,7 +19,7 @@ import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 from distributed import Client
 from bioimage_phenotyping import Cellprofiler
-
+from sklearn.metrics.pairwise import euclidean_distances
 
 def augment_at_theta(df, function, i, theta):
     return (
