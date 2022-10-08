@@ -77,6 +77,8 @@ df_distance_matrix = (df_splinedist.pipe(df_to_distance_matrix)).rename(
     index={"SplineDist": "SplineDist Dist"}, level="Features"
 )
 
+df_splinedist
+
 # %%
 
 x = df_splinedist.iloc[:, np.arange(0, len(df_splinedist.columns) - 1, 2)]
@@ -592,9 +594,14 @@ cellprofiler_H = scipy.stats.entropy(
 )
 cellprofiler_H
 
-# scipy.stats.ks_2samp(cellprofiler_importances,np.ones_like(cellprofiler_importances)/len(cellprofiler_importances))
+# scipy.stats.ks_2samp(
+    # cellprofiler_importances,
+    # np.ones_like(cellprofiler_importances)/len(cellprofiler_importances)
+    # )
 
-# scipy.stats.ks_2samp(spline_importances,np.ones_like(spline_importances)/len(spline_importances))
+# scipy.stats.ks_2samp(
+    # spline_importances,
+    # np.ones_like(spline_importances)/len(spline_importances))
 
 spline_test = scipy.stats.normaltest(importance_df.xs("SplineDist", level="Features"))
 cellprofiler_test = scipy.stats.normaltest(
