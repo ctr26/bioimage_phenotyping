@@ -7,5 +7,9 @@ zip.results:
 install.snakemake.env:
 	mamba env create -f environment.yml --force
 
+get.data:
+	wget "https://zenodo.org/record/7267108/files/results_csv.zip"
+	unzip -n results_csv.zip
+
 # add.secrets:
 # 	$(shell set -o allexport; source secrets.env;set +o allexport)
