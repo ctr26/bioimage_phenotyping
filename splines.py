@@ -1,3 +1,7 @@
+# %%
+import subprocess
+subprocess.run("make get.data",shell=True)
+
 # %% Imports
 
 import pandas as pd
@@ -33,7 +37,7 @@ kwargs_splinedist = {
 
 
 kwargs_cellprofiler = {
-    "data_folder": "old_results/analysed/cellprofiler/splinedist",
+    "data_folder": "results/analysed/cellprofiler/splinedist",
     "nuclei_path": "objects_FilteredNuclei.csv",
 }
 

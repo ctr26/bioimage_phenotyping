@@ -1,4 +1,7 @@
 # %%
+import subprocess
+subprocess.run("make get.data",shell=True)
+# %%
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
