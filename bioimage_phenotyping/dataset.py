@@ -47,7 +47,7 @@ from sklearn.utils import check_matplotlib_support
 import pandas as pd
 
 
-@pd.api.extensions.register_dataframe_accessor("cellesce")
+@pd.api.extensions.register_dataframe_accessor("bip")
 class CellprofilerDataFrame:
     def __init__(self, df):
         self.df = df
@@ -66,13 +66,13 @@ class CellprofilerDataFrame:
     ):
         # score_list = []
         # for fold in range(1,kfolds+1):
-        #     score = (self.df.cellesce.get_score_report(variable, model)
+        #     score = (self.df.bip.get_score_report(variable, model)
         #              .assign(Fold=fold))
         #     score_list.append(score)
         return pd.concat(
             [
                 (
-                    self.df.cellesce.get_score_report(
+                    self.df.bip.get_score_report(
                         variable=variable, model=model, groupby=groupby, augment=augment
                     ).assign(Fold=fold)
                 )
@@ -94,7 +94,7 @@ class CellprofilerDataFrame:
         X, y = df, list(df.index.get_level_values(variable))
         uniques = df.index.get_level_values(variable).to_series().unique()
         # X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y)
-        X_train, X_test, y_train, y_test = df.cellesce.train_test_split(
+        X_train, X_test, y_train, y_test = df.bip.train_test_split(
             variable, groupby=groupby, augment=augment
         )
         model.fit(X_train, y_train)
@@ -171,13 +171,13 @@ class CellprofilerDataFrame:
         return report_tall
 
     def drop_from_index(self, item):
-        return self.df.cellesce.drop_from_list(list(self.df.index.names), item)
+        return self.df.bip.drop_from_list(list(self.df.index.names), item)
 
     # df.index.names.difference(["Cell"])
     # @functools.cache
     def grouped_median(self, group="ObjectNumber"):
         return (self
-                .df.groupby(level=self.df.cellesce.drop_from_index(group))
+                .df.groupby(level=self.df.bip.drop_from_index(group))
                 .median())
 
     def bootstrap(self, groups, size, group="ObjectNumber"):
@@ -194,7 +194,7 @@ class CellprofilerDataFrame:
         return self.df.loc[IsolationForest().fit(self.df).predict(self.df) == 1]
 
     def clean(self):
-        return self.df.cellesce.drop_sigma(5).cellesce.isolation_forest()
+        return self.df.bip.drop_sigma(5).bip.isolation_forest()
 
     def preprocess(self, type="power_transform"):
         preprocessor_lookup = {
@@ -216,11 +216,11 @@ class CellprofilerDataFrame:
 
     def groupby_conj(self, group):
         return self.df.groupby(
-            level=self.df.cellesce.drop_from_index(group), group_keys=False
+            level=self.df.bip.drop_from_index(group), group_keys=False
         )
 
     def groupby_counts(self, group):
-        return self.df.cellesce.groupby_conj(group).size()
+        return self.df.bip.groupby_conj(group).size()
 
     # def summary_counts(self, name="ObjectNumber"):
     #     return (
@@ -359,7 +359,7 @@ class CellprofilerDataFrame:
             X_train, X_test, y_train, y_test = (
                 self.df
                 # .balance_dataset(variable)
-                .cellesce.train_test_split(
+                .bip.train_test_split(
                     variable, groupby=groupby, augment=augment, seed=fold
                 )
             )
@@ -386,14 +386,14 @@ class CellprofilerDataFrame:
         return pd.concat(importance_list)
 
     def keeplevel(self, level):
-        return self.df.droplevel(self.df.cellesce.drop_from_index(level))
+        return self.df.droplevel(self.df.bip.drop_from_index(level))
 
     # def get_score_report(df, model=RandomForestClassifier(), variable="Cell"):
     #     # labels, uniques = pd.factorize(df.reset_index()[variable])
     #     X, y = df, list(df.index.get_level_values(variable).astype("category"))
     #     # uniques = set(y)
     #     X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y)
-    #     X_train, X_test, y_train, y_test = df.cellesce.train_test_split(variable)
+    #     X_train, X_test, y_train, y_test = df.bip.train_test_split(variable)
     #     model.fit(X_train, y_train)
     #     # y_pred = pd.Series(model.predict(X_test), index=X_test.index)
 

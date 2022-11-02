@@ -1,6 +1,11 @@
 # %%
 import subprocess
-subprocess.run("make get.data",shell=True)
+from sklearn.metrics.pairwise import euclidean_distances
+from bioimage_phenotyping import Cellprofiler
+# from bioimage_phenotyping.features import features
+import bioimage_phenotyping.shapes as shapes
+
+subprocess.run("make get.data", shell=True)
 
 # %% Imports
 
@@ -17,7 +22,8 @@ from tqdm import tqdm
 import dask.dataframe as dd
 from sklearn import preprocessing
 
-from bioimage_phenotyping.shapes import df_to_distance_matrix
+from bioimage_phenotyping import shapes,utils,features
+# from bioimage_phenotyping import utils
 
 warnings.filterwarnings("ignore")
 sns.set()
@@ -41,15 +47,19 @@ kwargs_cellprofiler = {
     "nuclei_path": "objects_FilteredNuclei.csv",
 }
 
-# %% Helper functions
+kwargs_cellprofiler = {
+    "data_folder": "results/splinedist",
+    "nuclei_path": "objects_FilteredNuclei.csv",
+}
 
+# %% Helper functions
 
 def save_csv(df, path):
     df.to_csv(metadata(path))
     return df
 
 
-results_folder = f"results/merged"
+results_folder = f"results"
 pathlib.Path(results_folder).mkdir(parents=True, exist_ok=True)
 
 
@@ -60,144 +70,106 @@ def metadata(x):
 
 
 # %% Load spline (control_points) dataset
-from sklearn.metrics.pairwise import euclidean_distances
-from bioimage_phenotyping import Cellprofiler
-import bioimage_phenotyping.shapes as shapes
 
 df_splinedist = (
     Cellprofiler(**kwargs_splinedist)
     .get_data()
     .apply(shapes.align_coords_to_origin_np, axis=1, raw=True)
-    .cellesce.preprocess()
-    .cellesce.clean()
-    .assign(Features="SplineDist")
+    .bip.preprocess()
+    .bip.clean()
+    .assign(Features="Control Points")
     .set_index(["Features"], append=True)
     # .apply(shapes.align_coords_to_origin_np, axis=1, raw=True)
     .sample(frac=1)
 )
 
+df_distance_matrix = ((df_splinedist
+                       .pipe(shapes.df_to_distance_matrix))
+                      .rename(
+    index={"Control Points": "Control Points Dist"}, level="Features"
+))
 
-df_distance_matrix = (df_splinedist.pipe(df_to_distance_matrix)).rename(
-    index={"SplineDist": "SplineDist Dist"}, level="Features"
-)
-
-df_splinedist
-
+df_distogram = (df_distance_matrix
+                .apply(lambda x: np.histogram(x,bins=len(x))[0],axis=1,result_type="expand")
+                .rename(
+    index={"Control Points Dist": "Distogram"}, level="Features"
+))
 # %%
 
-x = df_splinedist.iloc[:, np.arange(0, len(df_splinedist.columns) - 1, 2)]
-y = df_splinedist.iloc[:, np.arange(1, len(df_splinedist.columns), 2)]
-plt.figure()
-plt.scatter(x.iloc[0], y.iloc[0])
-if not TEST_ROT:
-    plt.close()
-# %%
-df_splinedist_rot = df_splinedist.apply(
-    shapes.rotate_control_points_np, theta=-np.pi / 2, axis=1, raw=True
-)
+# x = df_splinedist.iloc[:, np.arange(0, len(df_splinedist.columns) - 1, 2)]
+# y = df_splinedist.iloc[:, np.arange(1, len(df_splinedist.columns), 2)]
+# plt.figure()
+# plt.scatter(x.iloc[0], y.iloc[0])
+# if not TEST_ROT:
+#     plt.close()
+# # %%
+# df_splinedist_rot = df_splinedist.apply(
+#     shapes.rotate_control_points_np, theta=-np.pi / 2, axis=1, raw=True
+# )
 
-x = df_splinedist_rot.iloc[:, np.arange(0, len(df_splinedist.columns) - 1, 2)]
-y = df_splinedist_rot.iloc[:, np.arange(1, len(df_splinedist.columns), 2)]
-plt.figure()
-plt.scatter(x.iloc[0], y.iloc[0])
-if not TEST_ROT:
-    plt.close()
+# x = df_splinedist_rot.iloc[:, np.arange(0, len(df_splinedist.columns) - 1, 2)]
+# y = df_splinedist_rot.iloc[:, np.arange(1, len(df_splinedist.columns), 2)]
+# plt.figure()
+# plt.scatter(x.iloc[0], y.iloc[0])
+# if not TEST_ROT:
+#     plt.close()
 # %%
 
 df_cellprofiler = (
     Cellprofiler(**kwargs_cellprofiler)
     .get_data()
-    .cellesce.preprocess()
-    .cellesce.clean()
+    .bip.preprocess()
+    .bip.clean()
     .assign(Features="CellProfiler")
     .set_index(["Features"], append=True)
     # .sample(32,axis=1,random_state=42)
 )
 df_cellprofiler.columns = df_cellprofiler.columns.str.replace("AreaShape_", "")
-df = pd.concat([df_cellprofiler, df_splinedist, df_distance_matrix])
 
-# pca =  PCA(n_components=10).fit()
-
-pca_spline = PCA(n_components=10).fit(df_splinedist)
-pca_cellprofiler = PCA(n_components=10).fit(df_cellprofiler)
-
+df = pd.concat([df_cellprofiler, df_splinedist, df_distance_matrix,df_distogram])
+_, (a,b,c,d) = zip(*list((df.groupby("Features"))))
 
 # %%
-def pca_fun(df, pca=PCA(n_components=10)):
-    return pd.DataFrame(pca.fit_transform(np.array(df)), index=df.index)
+
+pca_objs_df = (df
+               .groupby("Features")
+               .apply(features.pca.fit_na))
+pca_df = (df
+          .groupby("Features")
+          .apply(features.pca.fit_transform_na))
 
 
-# # pca_cellprofiler = df_cellprofiler.pipe(pca_fun)
-
-# df.groupby(level="Features").pipe(pca_fun)
-# %%
-
-pca_splinedist_df = df_splinedist.pipe(pca_fun, pca_spline)
-pca_cellprofiler_df = df_cellprofiler.pipe(pca_fun, pca_cellprofiler)
-pca_distance_matrix_df = df_distance_matrix.pipe(pca_fun)
-
-pca_df = pd.concat([pca_splinedist_df, pca_cellprofiler_df, pca_distance_matrix_df])
+explained_variance_df = (df
+                         .groupby("Features")
+                         .apply(features.pca.explained_variance))
 
 sns.relplot(data=pca_df, x=0, y=1, col="Features", hue="Cell")
+plt.show()
 
-exp_var = pd.concat(
-    [
-        pd.DataFrame(
-            pca_spline.explained_variance_, columns=["Explained Variance"]
-        ).assign(
-            **{
-                "Features": "Control points",
-                "Principal Component": np.arange(
-                    0, len(pca_spline.explained_variance_)
-                ),
-            }
-        ),
-        pd.DataFrame(
-            pca_cellprofiler.explained_variance_, columns=["Explained Variance"]
-        ).assign(
-            **{
-                "Features": "CellProfiler",
-                "Principal Component": np.arange(
-                    0, len(pca_cellprofiler.explained_variance_)
-                ),
-            }
-        ),
-    ]
-)
 
-pca_component = pd.concat(
-    [
-        pd.DataFrame(pca_spline.components_, columns=df_splinedist.columns).assign(
-            **{
-                "Features": "Control points",
-                "Principal Component": np.arange(0, len(pca_spline.components_)),
-            }
-        ),
-        pd.DataFrame(
-            pca_cellprofiler.components_, columns=df_cellprofiler.columns
-        ).assign(
-            **{
-                "Features": "CellProfiler",
-                "Principal Component": np.arange(0, len(pca_cellprofiler.components_)),
-            }
-        ),
-    ]
-).set_index(["Features", "Principal Component"])
-# %%
+
+
+pca_components_df = (df
+                    .groupby("Features")
+                    .apply(features.pca.components)
+                    )
+
+
+
 # plt.figure()
 sns.catplot(
     x="Principal Component",
     hue="Features",
     y="Explained Variance",
-    data=exp_var,
+    data=explained_variance_df.reset_index(),
     legend_out=True,
     kind="bar",
 )
 plt.savefig(metadata("pca.pdf"), bbox_inches="tight")
+plt.show()
 
-# %%
 component_melt = pd.melt(
-    pca_component,
+    pca_components_df,
     var_name="Feature",
     value_name="Component Magnitude",
     ignore_index=False,
@@ -223,61 +195,28 @@ important_features = (
 
 # %%
 
-# sns.catplot(
-#     col="Principal Component",
-#     y="Feature",
-#     x="Component Magnitude",
-#     sharey=False,
-#     data=component_melt.reset_index(),
-#     row="Features",
-#     height=12,
-# )
+sns.catplot(
+    col="Principal Component",
+    y="Feature",
+    x="Component Magnitude",
+    sharey=False,
+    data=component_melt.reset_index(),
+    row="Features",
+    height=12,
+)
 # %%
+
 # df = df.iloc[:,random.sample(range(0, features), 32)]
 
 print(
-    f'Organoids: {df.cellesce.grouped_median("ObjectNumber").cellesce.simple_counts()}',
-    f"Nuclei: {df.cellesce.simple_counts()}",
+    f'Organoids: {df
+            .bip.grouped_median("ObjectNumber")
+            .bip.simple_counts()}',
+    f"Nuclei: {df.bip.simple_counts()}",
 )
 
 upper = np.nanmean(df.values.flatten()) + 2 * np.nanstd(df.values.flatten())
 lower = np.nanmean(df.values.flatten()) - 2 * np.nanstd(df.values.flatten())
-
-
-def df_to_fingerprints_facet(*args, **kwargs):
-    data = kwargs.pop("data")
-    data = data.drop([*args[2:]], 1)
-
-    image = data.dropna(axis=1, how="all")
-
-    rows, cols = image.shape
-    median_height = 0.1
-    gap_height = 0.15
-    # median_rows = int(rows*median_height/100)
-    image_rows_percent = 1 - (gap_height + median_height)
-    one_percent = rows / image_rows_percent
-    # print(one_percent,rows)
-    gap_rows = int(gap_height * one_percent)
-    median_rows = int(median_height * one_percent)
-
-    # median_rows,gaps_rows=(rows,rows)
-    finger_print = image.median(axis=0)
-
-    finger_print_image = np.matlib.repmat(finger_print.values, median_rows, 1)
-    all_data = np.vstack([image, np.full([gap_rows, cols], np.nan), finger_print_image])
-
-    # fig,ax = plt.subplots(figsize=(5,3), dpi=150)
-    # fig, ax = plt.figure(figsize=(5,3), dpi=150)
-    # plt.figure()
-    plt.imshow(all_data, vmin=lower, vmax=upper, cmap="Spectral")
-    # sns.heatmap(all_data,vmin=lower, vmax=upper, cmap="Spectral",interpolation='nearest')
-    fig, ax = (plt.gcf(), plt.gca())
-    ax.set(adjustable="box", aspect="auto", autoscale_on=False)
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    ax.set_facecolor("white")
-    ax.grid(False)
-    # fig.add_subplot(2,2,1)
 
 
 sns.set()
@@ -292,7 +231,7 @@ g = sns.FacetGrid(
 )
 cax = g.fig.add_axes([1.015, 0.13, 0.015, 0.8])
 g.map_dataframe(
-    df_to_fingerprints_facet,
+    features.df_to_fingerprints_facet,
     "Features",
     "Nuclei",
     "Features",
@@ -336,17 +275,17 @@ plt.savefig(metadata("fingerprints.pdf"), bbox_inches="tight")
 
 def feature_importances(df, augment=None):
     return (
-        df.cellesce.grouped_median("ObjectNumber")
+        df.bip.grouped_median("ObjectNumber")
         .dropna(axis=1)
-        .cellesce.feature_importances(variable="Cell", kfolds=10, augment=augment)
+        .bip.feature_importances(variable="Cell", kfolds=10, augment=augment)
     ).assign(Augmentation=augmentation)
 
 
 def scoring(df, augment=None):
     return (
-        df.cellesce.grouped_median("ObjectNumber")
+        df.bip.grouped_median("ObjectNumber")
         .dropna(axis=1)
-        .cellesce.get_scoring_df(variable="Cell", kfolds=10, augment=augment)
+        .bip.get_scoring_df(variable="Cell", kfolds=10, augment=augment)
     ).assign(Augmentation=augmentation)
 
 
@@ -374,7 +313,7 @@ for augmentation in tqdm([0, 250, 500, 1000]):
     # )
     # dask_spline_df = dd.from_pandas(df_splinedist.reset_index(),npartitions=1)
 
-    # temp_df = df_splinedist.cellesce.grouped_median("ObjectNumber")
+    # temp_df = df_splinedist.bip.grouped_median("ObjectNumber")
     # temp_df.loc[:,:] = 1
     # df = pd.concat(
     #     [
@@ -398,9 +337,9 @@ for augmentation in tqdm([0, 250, 500, 1000]):
 
     # df = df_cellprofiler_rep
     # feature_importance = df.groupby(level="Features").apply(
-    #     lambda df: df.cellesce.grouped_median("ObjectNumber")
+    #     lambda df: df.bip.grouped_median("ObjectNumber")
     #     .dropna(axis=1)
-    #     .cellesce.feature_importances(variable="Cell",kfolds=5,groupby="augmentation")
+    #     .bip.feature_importances(variable="Cell",kfolds=5,groupby="augmentation")
     # ).assign(Augmentation=augmentation)
 
     spline_augment = lambda X, y: shapes.angular_augment_X_y(
@@ -416,13 +355,13 @@ for augmentation in tqdm([0, 250, 500, 1000]):
     feature_importance_df = pd.concat(
         [
             (
-                df_cellprofiler.cellesce.grouped_median("ObjectNumber")
+                df_cellprofiler.bip.grouped_median("ObjectNumber")
                 .pipe(feature_importances)
                 .assign(Features="CellProfiler")
                 .set_index("Features", append=True)
             ),
             (
-                df_splinedist.cellesce.grouped_median("ObjectNumber")
+                df_splinedist.bip.grouped_median("ObjectNumber")
                 .pipe(
                     feature_importances,
                     augment=shapes.angular_augment_X_y_fun(fold=augmentation),
@@ -436,13 +375,13 @@ for augmentation in tqdm([0, 250, 500, 1000]):
     scoring_df = pd.concat(
         [
             (
-                df_cellprofiler.cellesce.grouped_median("ObjectNumber")
+                df_cellprofiler.bip.grouped_median("ObjectNumber")
                 .pipe(scoring)
                 .assign(Features="CellProfiler")
                 .set_index("Features", append=True)
             ),
             (
-                df_splinedist.cellesce.grouped_median("ObjectNumber")
+                df_splinedist.bip.grouped_median("ObjectNumber")
                 .pipe(scoring, augment=shapes.angular_augment_X_y)
                 .assign(Features="SplineDist")
                 .set_index("Features", append=True)
@@ -455,9 +394,9 @@ for augmentation in tqdm([0, 250, 500, 1000]):
 
     # feature_importance = (
     #     df.groupby(level="Features").apply(
-    #         lambda df: df.cellesce.grouped_median("ObjectNumber")
+    #         lambda df: df.bip.grouped_median("ObjectNumber")
     #         .dropna(axis=1)
-    #         .cellesce.feature_importances(
+    #         .bip.feature_importances(
     #             variable="Cell", kfolds=10, groupby="augmentation"
     #         )
     #     )
@@ -465,9 +404,9 @@ for augmentation in tqdm([0, 250, 500, 1000]):
 
     # scoring = (
     #     df.groupby(level="Features").apply(
-    #         lambda df: df.cellesce.grouped_median("ObjectNumber")
+    #         lambda df: df.bip.grouped_median("ObjectNumber")
     #         .dropna(axis=1)
-    #         .cellesce.get_scoring_df(variable="Cell", kfolds=10, groupby="augmentation")
+    #         .bip.get_scoring_df(variable="Cell", kfolds=10, groupby="augmentation")
     #     )
     # ).assign(Augmentation=augmentation)
 
@@ -525,7 +464,7 @@ plt.savefig(metadata("feature_importance.pdf"))
 # df = (
 #     df_cellprofiler.pipe(augment_repeat, fold=fold)
 #     .pipe(df_add_augmentation_index)
-#     .cellesce.grouped_median("ObjectNumber")
+#     .bip.grouped_median("ObjectNumber")
 #     .dropna(axis=1)
 # )
 
@@ -536,7 +475,7 @@ plt.savefig(metadata("feature_importance.pdf"))
 # groupby = list(set(df.index.names)-{"augmentation"})
 
 # y = df.reset_index()[["Cell"]].astype(str)
-# X_train, X_test, y_train, y_test = df.cellesce.train_test_split(
+# X_train, X_test, y_train, y_test = df.bip.train_test_split(
 #     variable="Cell", groupby=["augmentation"], seed=42)
 # # (RandomForestClassifier()
 # #         .fit(X_train,
@@ -554,9 +493,9 @@ plt.savefig(metadata("feature_importance.pdf"))
 data = (
     (
         df.groupby(level="Features").apply(
-            lambda df: df.cellesce.grouped_median()
+            lambda df: df.bip.grouped_median()
             .dropna(axis=1)
-            .cellesce.feature_importances(variable="Cell")
+            .bip.feature_importances(variable="Cell")
         )
     )
     .reset_index()
@@ -599,13 +538,13 @@ cellprofiler_H = scipy.stats.entropy(
 cellprofiler_H
 
 # scipy.stats.ks_2samp(
-    # cellprofiler_importances,
-    # np.ones_like(cellprofiler_importances)/len(cellprofiler_importances)
-    # )
+# cellprofiler_importances,
+# np.ones_like(cellprofiler_importances)/len(cellprofiler_importances)
+# )
 
 # scipy.stats.ks_2samp(
-    # spline_importances,
-    # np.ones_like(spline_importances)/len(spline_importances))
+# spline_importances,
+# np.ones_like(spline_importances)/len(spline_importances))
 
 spline_test = scipy.stats.normaltest(importance_df.xs("SplineDist", level="Features"))
 cellprofiler_test = scipy.stats.normaltest(
@@ -617,7 +556,7 @@ print(f"Spline: {spline_test.pvalue[0]} CellProfiler: {cellprofiler_test.pvalue[
 # %%
 # sns.barplot(
 #     y="Feature", x="Cumulative Importance",
-#     data=df.cellesce.feature_importances(variable="Cell").reset_index()
+#     data=df.bip.feature_importances(variable="Cell").reset_index()
 # )
 # plt.tight_layout()
 
@@ -626,8 +565,8 @@ print(f"Spline: {spline_test.pvalue[0]} CellProfiler: {cellprofiler_test.pvalue[
 #     data=(
 #         pd.concat(
 #         [(
-#             df.cellesce.grouped_median("ObjectNumber")
-#             .cellesce.get_score_report("Cell")
+#             df.bip.grouped_median("ObjectNumber")
+#             .bip.get_score_report("Cell")
 #             .assign(**{"Population type": "Organoid"})
 #             .set_index("Metric")
 #             .loc[['f1-score', 'recall','precision']]
@@ -644,14 +583,14 @@ print(f"Spline: {spline_test.pvalue[0]} CellProfiler: {cellprofiler_test.pvalue[
 #                 (df.groupby(level="Features")
 #                  .apply(lambda df:
 #                     df.dropna(axis=1)
-#                     .cellesce.get_score_report(variable="Cell")))
+#                     .bip.get_score_report(variable="Cell")))
 #                 .assign(**{"Population type": "Nuclei"})
 #             ),
 #             (
 #                 (df.groupby(level="Features")
 #                  .apply(lambda df:
-#                     df.cellesce.grouped_median().dropna(axis=1)
-#                     .cellesce.get_score_report(variable="Cell")))
+#                     df.bip.grouped_median().dropna(axis=1)
+#                     .bip.get_score_report(variable="Cell")))
 #                 .assign(**{"Population type": "Organoid"})
 #             ),
 #         ])
@@ -706,9 +645,9 @@ def get_score_report_per_level(df, level="Features"):
     return (
         df.groupby(level="Features")
         .apply(
-            lambda df: df.cellesce.grouped_median()
+            lambda df: df.bip.grouped_median()
             .dropna(axis=1)
-            .cellesce.get_score_report(variable="Cell")
+            .bip.get_score_report(variable="Cell")
         )
         .reset_index()
         .set_index("Metric")
@@ -740,15 +679,15 @@ df = pd.concat([df_cellprofiler, df_splinedist])
 
 def score_report_per_row(df, variable="Cell"):
     return df.groupby(level="Features").apply(
-        lambda df: df.dropna(axis=1).cellesce.get_score_report(variable=variable)
+        lambda df: df.dropna(axis=1).bip.get_score_report(variable=variable)
     )
 
 
 def score_report_per_group(df, variable="Cell", group="ObjectNumber"):
     return df.groupby(level="Features").apply(
-        lambda df: df.cellesce.grouped_median(group)
+        lambda df: df.bip.grouped_median(group)
         .dropna(axis=1)
-        .cellesce.get_score_report(variable=variable)
+        .bip.get_score_report(variable=variable)
     )
 
 
@@ -827,8 +766,8 @@ if SAVE_FIG:
 
 # df_temp = ((df.groupby(level="Features")
 #                 .apply(lambda df:
-#                     df.cellesce.grouped_median().dropna(axis=1)
-#                     .cellesce.get_score_report(variable="Cell")))
+#                     df.bip.grouped_median().dropna(axis=1)
+#                     .bip.get_score_report(variable="Cell")))
 #                 .assign(**{"Population type": "Organoid"})
 #         .reset_index()
 #         .set_index("Metric")
