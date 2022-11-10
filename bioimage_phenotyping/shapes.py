@@ -206,3 +206,22 @@ def get_score_report_per_level(df, level="Features"):
         .loc[["f1-score", "recall", "precision"]]
         .reset_index()
     )
+    
+
+# x = df_splinedist.iloc[:, np.arange(0, len(df_splinedist.columns) - 1, 2)]
+# y = df_splinedist.iloc[:, np.arange(1, len(df_splinedist.columns), 2)]
+# plt.figure()
+# plt.scatter(x.iloc[0], y.iloc[0])
+# if not TEST_ROT:
+#     plt.close()
+# # %%
+# df_splinedist_rot = df_splinedist.apply(
+#     shapes.rotate_control_points_np, theta=-np.pi / 2, axis=1, raw=True
+# )
+
+# x = df_splinedist_rot.iloc[:, np.arange(0, len(df_splinedist.columns) - 1, 2)]
+# y = df_splinedist_rot.iloc[:, np.arange(1, len(df_splinedist.columns), 2)]
+# plt.figure()
+# plt.scatter(x.iloc[0], y.iloc[0])
+# if not TEST_ROT:
+#     plt.close()
