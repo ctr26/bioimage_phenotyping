@@ -61,7 +61,6 @@ TEST_ROT = False
 # }
 
 
-
 # kwargs_cellprofiler = {
 #     "data_folder": "results/splinedist",
 #     "nuclei_path": "objects_FilteredNuclei.csv",
@@ -111,9 +110,11 @@ df_splinedist = (
     .sample(frac=1)
 )
 
-df_distance_matrix = (df_splinedist.pipe(shapes.df_to_distance_matrix)).rename(
-    index={"Control Points": "Control Points Dist"}, level="Features"
-).bip.preprocess()
+df_distance_matrix = (
+    (df_splinedist.pipe(shapes.df_to_distance_matrix))
+    .rename(index={"Control Points": "Control Points Dist"}, level="Features")
+    .bip.preprocess()
+)
 
 df_distogram = (
     df_distance_matrix.apply(
@@ -247,49 +248,44 @@ augmentation = 0
 
 
 def feature_importances(df, augment=None):
-    return (
-        df
-        .dropna(axis=1)
-        .bip.feature_importances(variable="Cell", kfolds=1, augment=augment)
+    return df.dropna(axis=1).bip.feature_importances(
+        variable="Cell", kfolds=1, augment=augment
     )
 
 
 def scoring(df, augment=None, kfolds=5):
-    return (
-        df
-        .dropna(axis=1)
-        .bip.get_scoring_df(variable="Cell", kfolds=kfolds, augment=augment)
+    return df.dropna(axis=1).bip.get_scoring_df(
+        variable="Cell", kfolds=kfolds, augment=augment
     )
-
 
 
 spline_augment = lambda X, y: shapes.angular_augment_X_y(
     X, y, shapes.rotate_control_points_np, fold=augmentation
 )
 
-scoring_df = df.groupby("Features").apply(
-    lambda df: df.bip.grouped_median("ObjectNumber").pipe(scoring)
-).reset_index("Features")
+scoring_df = (
+    df.groupby("Features")
+    .apply(lambda df: df.bip.grouped_median("ObjectNumber").pipe(scoring))
+    .reset_index("Features")
+)
 
 # scoring_df = df.groupby("Features").apply(
 #     lambda df: df.pipe(scoring)
 # ).reset_index("Features")
 
-importance_df = df.groupby("Features").apply(
-    lambda df: df.bip.grouped_median("ObjectNumber").pipe(feature_importances)
-).reset_index("Features")
+importance_df = (
+    df.groupby("Features")
+    .apply(lambda df: df.bip.grouped_median("ObjectNumber").pipe(feature_importances))
+    .reset_index("Features")
+)
 
 # importance_df = df.groupby("Features").apply(
 #     lambda df: df.pipe(feature_importances)
 # ).reset_index("Features")
 
 
-scoring_df_mean = scoring_df.groupby(
-    ["Metric", "Kind", "Variable","Features"]
-).mean()
-scoring_df_var = scoring_df.groupby(
-    ["Metric", "Kind", "Variable"]
-).var()
+scoring_df_mean = scoring_df.groupby(["Metric", "Kind", "Variable", "Features"]).mean()
+scoring_df_var = scoring_df.groupby(["Metric", "Kind", "Variable"]).var()
 
 
 # %%
@@ -323,7 +319,8 @@ sns.catplot(
     data=scoring_df,
 )
 plt.savefig(metadata("scoring.pdf"))
-plt.show();plt.close()
+plt.show()
+plt.close()
 # %%
 sns.catplot(
     y="Feature",
@@ -343,5 +340,3 @@ import os
 
 print("Exporting to notebook")
 os.system(f"jupytext --to notebook splines.py --update --execute")
-
-
