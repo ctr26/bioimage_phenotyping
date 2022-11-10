@@ -13,7 +13,9 @@ from sklearn.pipeline import Pipeline
 from sklearn import metrics
 from sklearn import model_selection
 import pathlib
+import random
 
+from bioimage_phenotyping import Cellprofiler
 sns.set()
 from bioimage_phenotyping import Cellprofiler
 
@@ -48,7 +50,7 @@ kwargs={
 }
 
 kwargs_cellprofiler= {
-    "data_folder": "analysed/210720 - ISO49+34 - projection_XY/unet_2022/project_XY_objects",
+    "data_folder": "old_results/analysed/210720 - ISO49+34 - projection_XY/unet_2022/project_XY_objects",
     "nuclei_path": "object_filteredNuclei.csv",
 }
 
@@ -59,28 +61,44 @@ kwargs_cellprofiler= {
 # }
 
 
-kwargs_splinedist = {
-    "data_folder": "analysed/cellesce_splinedist_controlpoints",
-    "nuclei_path": "Secondary.csv",
-}
+# kwargs_splinedist = {
+#     "data_folder": "analysed/cellesce_splinedist_controlpoints",
+#     "nuclei_path": "Secondary.csv",
+# }
 
-kwargs_splinedist = {
-    "data_folder": "control_points",
+# kwargs_splinedist = {
+#     "data_folder": "control_points",
+#     "nuclei_path": "objects_FilteredNuclei.csv",
+# }
+
+# kwargs_cellprofiler = {
+#     "data_folder": "analysed/cellprofiler/splinedist",
+#     "nuclei_path": "objects_FilteredNuclei.csv",
+# }
+
+
+# kwargs_cellprofiler = {
+#     "data_folder": "old_results/analysed/cellprofiler/splinedist_32",
+#     "nuclei_path": "objects_FilteredNuclei.csv",
+# }
+
+kwargs_cellprofiler = {
+    "data_folder": "results/unet",
     "nuclei_path": "objects_FilteredNuclei.csv",
 }
 
 kwargs_cellprofiler = {
-    "data_folder": "analysed/cellprofiler/splinedist",
+    "data_folder": "old_results/analysed/cellprofiler/splinedist_32",
     "nuclei_path": "objects_FilteredNuclei.csv",
 }
-
 
 kwargs_cellprofiler = {
-    "data_folder": "analysed/cellprofiler/splinedist_32",
-    "nuclei_path": "objects_FilteredNuclei.csv",
+    "data_folder": "results/unet",
+    "nuclei_path": "all_FilteredNuclei.csv",
 }
 
-kwargs = kwargs_splinedist
+
+
 kwargs = kwargs_cellprofiler
 
 def save_csv(df,path):
@@ -97,16 +115,32 @@ def metadata(x):
     return path
 # %%
 
-import random
 
-from bioimage_phenotyping import Cellprofiler
-df = Cellprofiler(**kwargs).get_data().cellesce.clean().cellesce.preprocess()
+df = (Cellprofiler(**kwargs)
+      .get_data()
+      .bip.clean()
+      .bip.preprocess())
+
 rows,features = df.shape
-df = df.iloc[:,random.sample(range(0, features), 32)]
+# df = df.iloc[:,random.sample(range(0, features), 32)]
+
+
+df = pd.concat(
+        [
+                df.assign(
+                    **{"Population type": "Nuclei"}
+                ),
+                df
+                .bip.grouped_median("ObjectNumber")
+                .assign(**{"Population type": "Organoid","ObjectNumber":0})
+                .set_index("ObjectNumber",append=True)
+                .reorder_levels(order=df.index.names)
+        ]).set_index("Population type",append=True)
+
 
 print(
-    f'Organoids: {df.cellesce.grouped_median("ObjectNumber").cellesce.simple_counts()}',
-    f"Nuclei: {df.cellesce.simple_counts()}",
+    f'Organoids: {df.xs("Organoid",level="Population type").bip.simple_counts()}',
+    f'Nuclei: {df.xs("Nuclei",level="Population type").bip.simple_counts()}',
 )
 
 # %%
@@ -152,25 +186,31 @@ def df_to_fingerprints(df, median_height=5, index_by="Drug",fig_size=(5,3)):
         fig.colorbar(im, ax=axes.ravel().tolist())
         # fig.colorbar(im, cax=cbar_ax)
 
-df_to_fingerprints(df,index_by="Cell", median_height=1)
+df_to_fingerprints(df
+                    .xs("Nuclei",level="Population type"),
+                   index_by="Drug",
+                   median_height=1)
+
+# df_to_fingerprints(df,index_by="Drug", median_height=1)
 # plt.tight_layout()
 plt.savefig(metadata("finger_prints.pdf"))
 plt.show()
 
 
-# importance = df.cellesce.feature_importances(variable="Cell").reset_index()
+# importance = df.bip.feature_importances(variable="Cell").reset_index()
 
 # sns.barplot(
 #     y="Feature", x="Importance",
-#     data=df.cellesce.feature_importances(variable="Cell").reset_index()
+#     data=df.bip.feature_importances(variable="Cell").reset_index()
 # )
 # plt.show()
-
-plt.figure(figsize=(5, 5))
+# %%
+plt.figure(figsize=(3, 50))
 sns.barplot(
     y="Feature", x="Importance",
-    data=(df.cellesce.grouped_median()
-          .cellesce.feature_importances(variable="Cell")
+    data=(df
+          .xs("Organoid",level="Population type")
+          .bip.feature_importances(variable="Cell")
           .reset_index()
           .pipe(save_csv,"importance_median_control_points.csv")
           )
@@ -181,12 +221,20 @@ plt.show()
 # %%
 # sns.barplot(
 #     y="Feature", x="Cumulative Importance",
-#     data=df.cellesce.feature_importances(variable="Cell").reset_index()
+#     data=df.bip.feature_importances(variable="Cell").reset_index()
 # )
 # plt.tight_layout()   
 
+def scoring(df, variable="Cell", augment=None, kfolds=5):
+    return (
+        df
+        .dropna(axis=1)
+        .bip.get_scoring_df(variable=variable, kfolds=kfolds, augment=augment)
+    )
 
-# %% Could do better with median per imagenumber
+
+# %%
+
 plot = sns.catplot(
     x="Kind",
     y="Score",
@@ -194,23 +242,13 @@ plot = sns.catplot(
     # row="Cell",
     ci=None,
     hue="Population type",
-    data=pd.concat(
-        [
-            (
-                df.cellesce.get_score_report("Cell").assign(
-                    **{"Population type": "Nuclei"}
-                )
-            ),
-            (
-                df.cellesce.grouped_median("ObjectNumber")
-                .cellesce.get_score_report("Cell")
-                .assign(**{"Population type": "Organoid"})
-            ),
-        ])
+    data=(df
+        .groupby("Population type")
+        .apply(scoring)
         .set_index("Metric")
         .loc[['f1-score', 'recall','precision']]
         .reset_index()
-        .pipe(save_csv,"Cell_predictions_image_vs_nuclei.csv"),
+        .pipe(save_csv,"Cell_predictions_image_vs_nuclei.csv")),
     sharey=False,
     kind="bar",
     col_wrap=2,
@@ -218,6 +256,38 @@ plot = sns.catplot(
 plt.tight_layout()
 if SAVE_FIG: plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
 plt.show()
+# %% Could do better with median per imagenumber
+# plot = sns.catplot(
+#     x="Kind",
+#     y="Score",
+#     col="Metric",
+#     # row="Cell",
+#     ci=None,
+#     hue="Population type",
+#     data=pd.concat(
+#         [
+#             (
+#                 df.bip.get_score_report("Cell").assign(
+#                     **{"Population type": "Nuclei"}
+#                 )
+#             ),
+#             (
+#                 df.bip.grouped_median("ObjectNumber")
+#                 .bip.get_score_report("Cell")
+#                 .assign(**{"Population type": "Organoid"})
+#             ),
+#         ])
+#         .set_index("Metric")
+#         .loc[['f1-score', 'recall','precision']]
+#         .reset_index()
+#         .pipe(save_csv,"Cell_predictions_image_vs_nuclei.csv"),
+#     sharey=False,
+#     kind="bar",
+#     col_wrap=2,
+# ).set_xticklabels(rotation=45)
+# plt.tight_layout()
+# if SAVE_FIG: plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
+# plt.show()
 
 # %%
 
@@ -229,8 +299,8 @@ plot = sns.catplot(
     # row="Cell",
     ci=None,
     hue="Metric",
-    data=(df.cellesce.grouped_median("ObjectNumber")
-            .cellesce.get_score_report("Cell")
+    data=(df.xs("Organoid",level="Population type"),
+            .bip.get_score_report("Cell")
             .assign(**{"Population type": "Organoid"})
             .set_index("Metric")
             .loc[['f1-score', 'recall','precision']]
@@ -254,9 +324,9 @@ plot = sns.catplot(
     ci=None,
     hue="Kind",
     data=(
-        df.cellesce.grouped_median("ObjectNumber")
+        df.bip.grouped_median("ObjectNumber")
         .groupby(level="Cell")
-        .apply(lambda x: x.cellesce.get_score_report("Drug"))
+        .apply(lambda x: x.bip.get_score_report("Drug"))
         .reset_index()
     ),
     sharey=False,
@@ -279,7 +349,7 @@ sns.catplot(
     data=(
         df
         #   .grouped_median("ObjectNumber")
-        .cellesce.groupby_counts("ImageNumber")
+        .bip.groupby_counts("ImageNumber")
     ).reset_index(name="Organoids"),
 )
 plt.tight_layout()
@@ -295,7 +365,7 @@ sns.catplot(
     kind="bar",
     orient="h",
     ci=None,
-    data=(df.cellesce.groupby_counts("ObjectNumber"))
+    data=(df.bip.groupby_counts("ObjectNumber"))
     .reset_index(name="Nuclei"),
 )
 plt.tight_layout()
@@ -307,8 +377,8 @@ plot = sns.histplot(
     weights="Organoids",
     hue="Drug",
     data=(
-        df.cellesce.grouped_median("ObjectNumber")
-        .cellesce.groupby_counts("ImageNumber")
+        df.bip.grouped_median("ObjectNumber")
+        .bip.groupby_counts("ImageNumber")
         .reset_index(name="Organoids")
     ),
     multiple="stack",
@@ -324,8 +394,8 @@ plot = sns.histplot(
     weights="Organoids",
     hue="Drug",
     data=(
-        df.cellesce.grouped_median("ObjectNumber")
-        .cellesce.groupby_counts("ImageNumber")
+        df.bip.grouped_median("ObjectNumber")
+        .bip.groupby_counts("ImageNumber")
         .reset_index(name="Organoids")
     ),
     multiple="stack",
@@ -337,21 +407,21 @@ plt.show()
 # %%
 # sns.clustermap(
 #     (
-#         df.cellesce.grouped_median("ObjectNumber")
-#         .cellesce.keeplevel(["Cell", "Drug"])
+#         df.bip.grouped_median("ObjectNumber")
+#         .bip.keeplevel(["Cell", "Drug"])
 #         .T.corr()
 #     )
 # )
 # plt.show()
 # sns.clustermap(
-#     (df.cellesce.grouped_median("ObjectNumber")
-#      .cellesce.keeplevel(["Cell"])
+#     (df.bip.grouped_median("ObjectNumber")
+#      .bip.keeplevel(["Cell"])
 #      .T.corr())
 # )
 # plt.show()
 # sns.clustermap(
-#     (df.cellesce.grouped_median("ObjectNumber")
-#      .cellesce.keeplevel(["Drug"])
+#     (df.bip.grouped_median("ObjectNumber")
+#      .bip.keeplevel(["Drug"])
 #      .T.corr())
 # )
 # plt.show()
@@ -369,17 +439,17 @@ plt.show()
 # #                     ("RandomForest",RandomForestClassifier())
 # #                   ])
 
-# importance = df.cellesce.feature_importances(RandomForestClassifier(), variable="Cell")
+# importance = df.bip.feature_importances(RandomForestClassifier(), variable="Cell")
 # print("Nuclei Cell")
-# importance = df.cellesce.grouped_median().cellesce.feature_importances(
+# importance = df.bip.grouped_median().bip.feature_importances(
 #     model, variable="Cell"
 # )
 # print("Organoid Cell")
 
-# importance = df.cellesce.feature_importances(RandomForestClassifier(), variable="Drug")
+# importance = df.bip.feature_importances(RandomForestClassifier(), variable="Drug")
 # print("Nuclei Drug")
 
-# importance = df.cellesce.grouped_median().cellesce.feature_importances(model, variable="Drug")
+# importance = df.bip.grouped_median().bip.feature_importances(model, variable="Drug")
 # print("Organoid Drug")
 
 
@@ -388,7 +458,7 @@ plt.show()
 
 # sns.barplot(
 #     y="Feature", x="Cumlative importance",
-#     data=df.cellesce.feature_importances(variable="Cell")
+#     data=df.bip.feature_importances(variable="Cell")
 # )
 # plt.tight_layout()
 
@@ -396,7 +466,7 @@ plt.show()
     
     
 # %%
-df_new = df.cellesce.select_features().cellesce.grouped_median("ObjectNumber")
+df_new = df.bip.select_features().bip.grouped_median("ObjectNumber")
 # importance = df.classification_report(model)
 # # %%
 # VARS = ["Cell", "Drug", "Conc /uM"]
@@ -407,7 +477,7 @@ df_new = df.cellesce.select_features().cellesce.grouped_median("ObjectNumber")
 #     X, y = df, list(df.index.get_level_values(variable))
 #     uniques = df.index.get_level_values(variable).to_series().unique()
 #     X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y)
-#     X_train, X_test, y_train, y_test = df.cellesce.train_test_split(variable)
+#     X_train, X_test, y_train, y_test = df.bip.train_test_split(variable)
 #     model.fit(X_train, y_train)
 #     # y_pred = pd.Series(model.predict(X_test), index=X_test.index)
 
@@ -443,7 +513,7 @@ plot = sns.catplot(
     ci=None,
     # hue="Metric",
     data=(
-        df.cellesce.grouped_median("ObjectNumber").cellesce.get_score_report("Drug")
+        df.bip.grouped_median("ObjectNumber").bip.get_score_report("Drug")
         .reset_index()
     ),
     sharey=False,
@@ -453,11 +523,11 @@ plt.show()
 
 # %%
 # data=pd.concat([
-#         get_score_report(df.cellesce.grouped_median("ObjectNumber"),"Cell").assign(**{"Population type": "Organoid"}),
+#         get_score_report(df.bip.grouped_median("ObjectNumber"),"Cell").assign(**{"Population type": "Organoid"}),
 #         get_score_report(df,"Cell").assign(**{"Population type": "Nuclei"})
 #         ]),
 
-# df.cellesce.grouped_median("ObjectNumber"),"Cell").groupby(level="Cell").apply(get_score_report)
+# df.bip.grouped_median("ObjectNumber"),"Cell").groupby(level="Cell").apply(get_score_report)
 # plot = sns.catplot(
 #     x="Kind",
 #     y="Score",
@@ -472,9 +542,9 @@ plt.show()
 # %%
 
 
-# # a.cellesce.test_fun()
+# # a.bip.test_fun()
 
-# a.groupby("col1").apply(lambda d: d.cellesce.test_fun())
+# a.groupby("col1").apply(lambda d: d.bip.test_fun())
 
 # %%
 
@@ -505,7 +575,7 @@ plt.show()
 # c = get_score_report(df,"Conc /uM")
 # report_df = pd.concat(
 #     [
-#         get_score_report(df.cellesce.grouped_median("ObjectNumber"), variable).assign(
+#         get_score_report(df.bip.grouped_median("ObjectNumber"), variable).assign(
 #             **{"Population type": "Median"}
 #         )
 #         for variable in VARS
@@ -513,26 +583,26 @@ plt.show()
 # ).set_index(["Metric", "Kind", "Variable", "Population type"])
 
 # report_df = pd.concat(
-#         get_score_report(df.cellesce.grouped_median("ObjectNumber"), "Cell").assign(
+#         get_score_report(df.bip.grouped_median("ObjectNumber"), "Cell").assign(
 #             **{"Population type": "Median"}
 #         )
 # ).set_index(["Metric", "Kind", "Variable", "Population type"])
 # %%
 
-# df.cellesce.grouped_median("ObjectNumber").apply()
+# df.bip.grouped_median("ObjectNumber").apply()
 
 # (pd.concat([
 #     df.assign(**{"Population type": "Organoid"}),
-#     df.cellesce.grouped_median("ObjectNumber")
+#     df.bip.grouped_median("ObjectNumber")
 #     ])
 #     .apply(lambda x: get_score_report(x,"Cell"))
 # )
 
-# df.cellesce.grouped_median("ObjectNumber").apply(lambda x: get_score_report(x,"Cell"))
+# df.bip.grouped_median("ObjectNumber").apply(lambda x: get_score_report(x,"Cell"))
 
 # pd.concat([
-# get_score_report(df.cellesce.grouped_median("ObjectNumber"),"Cell").assign(**{"Population type": "Organoid"}),
+# get_score_report(df.bip.grouped_median("ObjectNumber"),"Cell").assign(**{"Population type": "Organoid"}),
 # get_score_report(df,"Cell").assign(**{"Population type": "Nuclei"})
 # ])
 # get_score_report(df, "Cell").assign(**{"Population type": "Median"})
-# get_score_report(df.cellesce.grouped_median("ObjectNumber"), "Cell")
+# get_score_report(df.bip.grouped_median("ObjectNumber"), "Cell")
