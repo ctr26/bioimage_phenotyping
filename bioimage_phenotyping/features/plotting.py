@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 def df_to_fingerprints_facet(*args, **kwargs):
+    upper = kwargs["vmax"]
+    lower = kwargs["vmin"]
     data = kwargs.pop("data")
     data = data.drop([*args[2:]], 1)
 
