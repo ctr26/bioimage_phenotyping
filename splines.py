@@ -97,11 +97,19 @@ def metadata(x):
 
 # %% Load spline (control_points) dataset
 
+def normalise_nd(arr):
+    tmp = np.array(arr).ravel()
+    bot = tmp.min()
+    tmp = arr-tmp.min()
+    top = tmp.max()
+    return (arr-bot)/top
+
 df_splinedist = (
     Cellprofiler(**kwargs_splinedist)
     .get_data()
     .apply(shapes.align_coords_to_origin_np, axis=1, raw=True)
-    .bip.preprocess()
+    .pipe(normalise_nd)
+    # .bip.preprocess()
     # .bip.preprocess()
     .bip.clean()
     .assign(Features="Control Points")
@@ -111,16 +119,16 @@ df_splinedist = (
 )
 
 df_distance_matrix = (
-    (df_splinedist.pipe(shapes.df_to_distance_matrix))
-    .rename(index={"Control Points": "Control Points Dist"}, level="Features")
+    (df_splinedist
+     .pipe(shapes.df_to_distance_matrix))
+     .rename(index={"Control Points": "Control Points Dist"}, level="Features")
     .bip.preprocess()
 )
 
 df_distogram = (
-    df_distance_matrix.apply(
-        lambda x: np.histogram(x, bins=len(x))[0], axis=1, result_type="expand"
-    )
-    .rename(index={"Control Points Dist": "Distogram"}, level="Features")
+    df_splinedist
+     .pipe(shapes.df_to_distogram)
+     .rename(index={"Control Points": "Distogram"}, level="Features")
     .bip.preprocess()
 )
 # %%
@@ -235,8 +243,7 @@ g.map_dataframe(
     "Cell",
     cmap="Spectral",
     cbar=True,
-    vmax=upper,
-    vmin=lower,
+    vmax=upper,vmin=lower,
 )
 plt.colorbar(cax=cax)
 plt.savefig(metadata("fingerprints.pdf"), bbox_inches="tight")
@@ -339,4 +346,4 @@ plt.show()
 import os
 
 print("Exporting to notebook")
-os.system(f"jupytext --to notebook splines.py --update --execute")
+# os.system(f"jupytext --to notebook splines.py --update --execute")

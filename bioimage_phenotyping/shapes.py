@@ -20,6 +20,8 @@ from dask.diagnostics import ProgressBar
 from distributed import Client
 from bioimage_phenotyping import Cellprofiler
 from sklearn.metrics import pairwise
+
+
 def augment_at_theta(df, function, i, theta):
     return (
         df.apply(function, axis=1, theta=theta)
@@ -130,12 +132,19 @@ def augment_distance_matrix(df, axis=0):
 def augment_repeat(df, fold=1):
     return df.reindex(df.index.repeat(fold))
 
+def series_to_distance_matrix(x):
+    distance_matrix = np.tril(
+        pairwise.euclidean_distances(np.array([x[0::2], x[1::2]]).T)
+    )
+    return distance_matrix
 
 
 def df_to_distance_matrix(df):
     return (
         df.apply(
-            lambda x: np.tril(pairwise.euclidean_distances(np.array([x[0::2], x[1::2]]).T))
+            lambda x: np.tril(
+                pairwise.euclidean_distances(np.array([x[0::2], x[1::2]]).T)
+            )
             .flatten()
             .flatten(),
             axis=1,
@@ -144,7 +153,17 @@ def df_to_distance_matrix(df):
         .replace(0, np.nan)
         .dropna(axis=1)
     )
+
+#%TODO Number of bins matters
+def df_to_distogram(df):
+    return df_to_distance_matrix(df).apply(
+        lambda x: np.histogram(x, bins=len(x))[0], axis=1, result_type="expand"
+    )
     
+def df_to_cyclic_distograms(df):
+    pass
+
+
 
 # for augmentation in np.linspace(1,200,10).astype(int):
 def augment_df_dask(df, function, fold=0):
@@ -187,9 +206,10 @@ def angular_augment_X_y(X, y, function=rotate_control_points_np, fold=0):
     return X_aug, y_aug
 
 
-def angular_augment_X_y_fun(function=rotate_control_points_np,fold=0):
-    def return_fun(X,y):
-        return angular_augment_X_y(X, y, function=rotate_control_points_np,fold=fold)
+def angular_augment_X_y_fun(function=rotate_control_points_np, fold=0):
+    def return_fun(X, y):
+        return angular_augment_X_y(X, y, function=rotate_control_points_np, fold=fold)
+
     return return_fun
 
 
@@ -206,7 +226,7 @@ def get_score_report_per_level(df, level="Features"):
         .loc[["f1-score", "recall", "precision"]]
         .reset_index()
     )
-    
+
 
 # x = df_splinedist.iloc[:, np.arange(0, len(df_splinedist.columns) - 1, 2)]
 # y = df_splinedist.iloc[:, np.arange(1, len(df_splinedist.columns), 2)]
