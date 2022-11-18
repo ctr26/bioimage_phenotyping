@@ -20,7 +20,13 @@ from dask.diagnostics import ProgressBar
 from distributed import Client
 from bioimage_phenotyping import Cellprofiler
 from sklearn.metrics import pairwise
-
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.base import BaseEstimator
+from sklearn.base import TransformerMixin
 
 def augment_at_theta(df, function, i, theta):
     return (
@@ -245,3 +251,39 @@ def get_score_report_per_level(df, level="Features"):
 # plt.scatter(x.iloc[0], y.iloc[0])
 # if not TEST_ROT:
 #     plt.close()
+
+
+
+class DistanceMatrix(BaseEstimator,TransformerMixin):
+    def __init__(self):
+        pass
+    
+    def fit(self,X, y=None, **fit_params):
+        return self
+    
+    def transform(self,X, y=None, **fit_params):
+        X_trans = (
+            pd.DataFrame(X.copy())
+            .pipe(df_to_distance_matrix))
+
+        return X_trans
+    def fit_transform(self, X, y=None, **fit_params):
+        return self.transform(X, y, **fit_params)
+
+
+class Distogram(BaseEstimator,TransformerMixin):
+    def __init__(self):
+        pass
+    
+    def fit(self,X, y=None, **fit_params):
+        return self
+    
+    def transform(self,X, y=None, **fit_params):
+        X_trans = (
+            pd.DataFrame(X.copy())
+            .pipe(df_to_distogram))
+
+        return X_trans
+    def fit_transform(self, X, y=None, **fit_params):
+        return self.transform(X, y, **fit_params)
+
