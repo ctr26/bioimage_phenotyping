@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore")
 sns.set()
 from bioimage_phenotyping import Cellprofiler
 
-# plt.ion()
+plt.ion()
 
 VARIABLES = ["Conc /uM", "Date", "Drug"]
 SAVE_FIG = True
@@ -62,7 +62,7 @@ TEST_ROT = False
 
 
 # kwargs_cellprofiler = {
-#     "data_folder": "results/splinedist",
+#     "data_folder": "unet/splinedist",
 #     "nuclei_path": "objects_FilteredNuclei.csv",
 # }
 
@@ -97,12 +97,14 @@ def metadata(x):
 
 # %% Load spline (control_points) dataset
 
+
 def normalise_nd(arr):
     tmp = np.array(arr).ravel()
     bot = tmp.min()
-    tmp = arr-tmp.min()
+    tmp = arr - tmp.min()
     top = tmp.max()
-    return (arr-bot)/top
+    return (arr - bot) / top
+
 
 df_splinedist = (
     Cellprofiler(**kwargs_splinedist)
@@ -119,16 +121,14 @@ df_splinedist = (
 )
 
 df_distance_matrix = (
-    (df_splinedist
-     .pipe(shapes.df_to_distance_matrix))
-     .rename(index={"Control Points": "Control Points Dist"}, level="Features")
+    (df_splinedist.pipe(shapes.df_to_distance_matrix))
+    .rename(index={"Control Points": "Control Points Dist"}, level="Features")
     .bip.preprocess()
 )
 
 df_distogram = (
-    df_splinedist
-     .pipe(shapes.df_to_distogram)
-     .rename(index={"Control Points": "Distogram"}, level="Features")
+    df_splinedist.pipe(shapes.df_to_distogram)
+    .rename(index={"Control Points": "Distogram"}, level="Features")
     .bip.preprocess()
 )
 # %%
@@ -146,11 +146,11 @@ df_cellprofiler.columns = df_cellprofiler.columns.str.replace("AreaShape_", "")
 
 df = pd.concat([df_cellprofiler, df_splinedist, df_distance_matrix, df_distogram])
 
+
 print(
     f'Organoids: {df.bip.grouped_median("ObjectNumber").bip.simple_counts()}',
     f"Nuclei: {df.bip.simple_counts()}",
 )
-# _, (a,b,c,d) = zip(*list((df.groupby("Features"))))
 
 # %%
 
@@ -186,7 +186,7 @@ sns.catplot(
     x="Principal Component",
     hue="Features",
     y="Explained Variance",
-    data=explained_variance_df.reset_index(),
+    data=explained_variance_df.reset_index().pipe(save_csv, "pca.csv"),
     legend_out=True,
     kind="bar",
 )
@@ -209,7 +209,7 @@ plt.show()
 sns.catplot(
     x="Principal Component",
     y="Feature",
-    data=important_features.reset_index(),
+    data=important_features.reset_index().pipe(save_csv, "pca_components.csv"),
     col="Features",
     sharey=False,
 )
@@ -227,12 +227,14 @@ lower = np.nanmean(df.values.flatten()) - 2 * np.nanstd(df.values.flatten())
 sns.set()
 g = sns.FacetGrid(
     df.reset_index(level=["Cell", "Features"]),
-    col="Features",
-    row="Cell",
-    height=2,
+    row="Features",
+    col="Cell",
+    # height=2,
     aspect=1.61,
     sharey=False,
     sharex=False,
+    height=3,
+    # col_wrap=2,
 )
 cax = g.fig.add_axes([1.015, 0.13, 0.015, 0.8])
 g.map_dataframe(
@@ -243,14 +245,17 @@ g.map_dataframe(
     "Cell",
     cmap="Spectral",
     cbar=True,
-    vmax=upper,vmin=lower,
+    vmax=upper,
+    vmin=lower,
 )
+plt.tight_layout()
 plt.colorbar(cax=cax)
 plt.savefig(metadata("fingerprints.pdf"), bbox_inches="tight")
 plt.show()
 # %%
 
 
+# %%
 augmentation = 0
 
 
@@ -312,7 +317,7 @@ scoring_df_var = scoring_df.groupby(["Metric", "Kind", "Variable"]).var()
 #     data=(scoring_df.reset_index("Features")),
 # )
 
-sns.catplot(
+g = sns.catplot(
     # x="Augmentation",
     y="Score",
     col="Kind",
@@ -323,8 +328,11 @@ sns.catplot(
     sharex=False,
     # x_ci="ci",
     # x_bins=5,
-    data=scoring_df,
+    data=scoring_df.pipe(save_csv, "scoring.csv"),
+    kind="bar",
 )
+g.set_xticklabels(rotation=45)
+plt.tight_layout()
 plt.savefig(metadata("scoring.pdf"))
 plt.show()
 plt.close()
@@ -334,10 +342,11 @@ sns.catplot(
     x="Importance",
     col="Features",
     sharey=False,
+    sharex=False,
     kind="bar",
     aspect=1 / 3,
     height=12.5,
-    data=(importance_df.reset_index()),
+    data=(importance_df.reset_index().pipe(save_csv, "feature_importance.csv")),
 )
 plt.savefig(metadata("feature_importance.pdf"))
 plt.show()
