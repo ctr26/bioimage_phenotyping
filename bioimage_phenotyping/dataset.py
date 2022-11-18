@@ -17,6 +17,14 @@ from sklearn.pipeline import Pipeline
 from sklearn.feature_selection import SelectFromModel, RFECV, RFE
 
 import functools
+import shap
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, PowerTransformer
+from sklearn.base import BaseEstimator
+from sklearn.base import TransformerMixin
 
 
 import os
@@ -47,14 +55,29 @@ from sklearn.utils import check_matplotlib_support
 import pandas as pd
 
 
+def grouped_median(df, group="ObjectNumber"):
+    return df.groupby(level=drop_from_index(df,group)).median()
+
+def drop_from_index(df, item):
+    return drop_from_list(list(df.index.names), item)
+
+def drop_from_list(list_in, item):
+    item = [item] if isinstance(item, str) else item
+    return list(set(list_in) - set(item))
+
+def get_shap_df(shaps):
+    return (pd.DataFrame(shaps.values,columns=shaps.feature_names)
+           .rename_axis("Sample")
+           .reset_index()
+           .melt(id_vars="Sample",var_name="Feature",value_name="Shap Value"))
+
 @pd.api.extensions.register_dataframe_accessor("bip")
 class CellprofilerDataFrame:
     def __init__(self, df):
         self.df = df
 
     def drop_from_list(self, list_in, item):
-        item = [item] if isinstance(item, str) else item
-        return list(set(list_in) - set(item))
+        return drop_from_list(list_in, item)
 
     def get_scoring_df(
         self,
@@ -82,6 +105,65 @@ class CellprofilerDataFrame:
 
     # @functools.
     # Needs python 3.9
+    def get_shap_df(
+        self,
+        model,
+        variable="Cell",
+        groupby=None,
+        augment=None,
+        shap_samples=100,
+        samples=None,
+        *args,**kwargs):
+        return get_shap_df(
+            self.get_shap_values(
+                    model,
+                    variable="Cell",
+                    groupby=None,
+                    augment=None,
+                    shap_samples=100,
+                    samples=None,
+                    *args,**kwargs)
+            )
+    
+    def get_shap_values(
+        self,
+        model,
+        variable="Cell",
+        groupby=None,
+        augment=None,
+        shap_samples=100,
+        samples=None,
+        *args,**kwargs,
+    ):
+        df = self.df
+        # X = np.array(df.apply(pd.to_numeric))
+        X, y = df, list(df.index.get_level_values(variable))
+        X100 = shap.utils.sample(np.array(X), 100)
+
+        # y = df.index.get_level_values(variable)
+        # y = DistanceMatrix().fit_transform(X)
+
+        X_train, X_test, y_train, y_test = self.df.apply(
+            pd.to_numeric
+        ).bip.train_test_split(variable, groupby=groupby, augment=augment)
+        # model = RandomForestClassifier()
+        # model = Pipeline([('Distogram', Distogram()),
+        #                 ('scaler', StandardScaler()),
+        #                 ('rf', RandomForestClassifier())])
+        
+        y_train = LabelEncoder().fit(y).transform(y_train)
+        y_test = LabelEncoder().fit(y).transform(y_test)
+        
+        model.fit(X_train, y_train)
+        model.score(X_test, y_test)
+
+        explainer = shap.Explainer(model.predict, X100,*args,**kwargs)
+
+        shap_values = explainer(X)
+        return shap_values
+    
+        
+
     def get_score_report(
         self,
         variable="Cell",
@@ -171,14 +253,12 @@ class CellprofilerDataFrame:
         return report_tall
 
     def drop_from_index(self, item):
-        return self.df.bip.drop_from_list(list(self.df.index.names), item)
+        return drop_from_index(self.df,item)
 
     # df.index.names.difference(["Cell"])
     # @functools.cache
     def grouped_median(self, group="ObjectNumber"):
-        return (self
-                .df.groupby(level=self.df.bip.drop_from_index(group))
-                .median())
+        return grouped_median(self.df, group="ObjectNumber")
 
     def bootstrap(self, groups, size, group="ObjectNumber"):
         self.groupby(level=list(set(self.attrs["index_headers"]) - {group})).median()
@@ -229,7 +309,6 @@ class CellprofilerDataFrame:
     #             .size()
     #     )
 
-        
     def simple_counts(self):
         return self.df.count().iloc[0]
 
@@ -562,7 +641,6 @@ class Cellprofiler(pd.DataFrame):
             .str.replace("uM", "")
         ).round(decimals=decimals)
         return extracted_data[filename_headers]
-
 
 
 def zero_is_control(df):
