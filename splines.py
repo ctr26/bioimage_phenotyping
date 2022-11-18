@@ -3,9 +3,14 @@
 import subprocess
 from sklearn.metrics.pairwise import euclidean_distances
 from bioimage_phenotyping import Cellprofiler
+import bioimage_phenotyping.dataset as dataset
 
 # from bioimage_phenotyping.features import features
 import bioimage_phenotyping.shapes as shapes
+from sklearn.base import BaseEstimator
+from sklearn.base import TransformerMixin
+
+from sklearn.preprocessing import FunctionTransformer
 
 subprocess.run("make get.data", shell=True)
 
@@ -25,6 +30,18 @@ import dask.dataframe as dd
 from sklearn import preprocessing
 
 from bioimage_phenotyping import shapes, utils, features
+
+# import shap
+from sklearn.ensemble import RandomForestClassifier
+
+# from sklearn.model_selection import train_test_split
+# from sklearn.preprocessing import LabelEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, PowerTransformer
+
+# from sklearn.base import BaseEstimator
+# from sklearn.base import TransformerMixin
+
 
 # from bioimage_phenotyping import utils
 
@@ -351,6 +368,65 @@ sns.catplot(
 plt.savefig(metadata("feature_importance.pdf"))
 plt.show()
 # %%
+
+hparams = [
+    {
+        "df": df_cellprofiler.bip.grouped_median(),
+        "name": "CellProfiler",
+        "kwargs": {
+            "model": Pipeline(
+                [
+                    ("rf", RandomForestClassifier(n_jobs=-1)),
+                ]
+            ),
+            "algorithm": "auto",  # tree?
+        },
+    },
+    {
+        "df": df_splinedist.sample(5),
+        "name": "Control Points",
+        "kwargs": {
+            "model": Pipeline(
+                [
+                    ("Distogram", shapes.Distogram()),
+                    ("scaler", PowerTransformer()),
+                    ("rf", RandomForestClassifier(n_jobs=-1)),
+                ]
+            ),
+            "algorithm": "auto",
+        },
+    },
+]
+
+
+shap_df = pd.concat(
+    [
+        hparam["df"]
+        .bip.get_shap_df(
+            **hparam["kwargs"], output_names=list(hparam["df"].columns.astype(str))
+        )
+        .assign(Features=hparam["name"])
+        for hparam in hparams
+    ]
+)
+
+
+g = sns.catplot(
+    y="Feature",
+    x="Shap Value",
+    # hue="Feature",
+    row="Features",
+    kind="violin",
+    data=shap_df.pipe(save_csv, "shap.csv"),
+    sharex=False,
+    sharey=False,
+    height=12.27,
+    aspect=11.7 / 8.27,
+)
+plt.savefig(metadata("shap.pdf"))
+plt.show()
+
+
 # %%
 import os
 
