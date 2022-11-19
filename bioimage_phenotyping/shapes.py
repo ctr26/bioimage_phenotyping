@@ -186,8 +186,20 @@ def distance_matrix_to_cyclic_distograms(distmat):
     return cyclic_distograms
     
 def df_to_cyclic_distograms(df):
-    pass
-
+    df =  df.apply(
+            lambda x: pairwise.euclidean_distances(np.array([x[0::2], x[1::2]]).T)            
+            .flatten(),
+            axis=1,
+            result_type="expand",
+        )
+    
+    df =  df.apply(
+            lambda x: distance_matrix_to_cyclic_distograms(x)            
+            .flatten(),
+            axis=1,
+            result_type="expand",
+        )
+    return df
 
 
 # for augmentation in np.linspace(1,200,10).astype(int):
