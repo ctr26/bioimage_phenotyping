@@ -167,7 +167,7 @@ df_cellprofiler = (
 )
 df_cellprofiler.columns = df_cellprofiler.columns.str.replace("AreaShape_", "")
 
-df = pd.concat([df_cellprofiler, df_splinedist, df_distance_matrix, df_distogram])
+df = pd.concat([df_cellprofiler, df_splinedist, df_distance_matrix, df_distogram, df_distogram_cyclic])
 
 
 print(
