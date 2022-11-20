@@ -148,6 +148,12 @@ df_distogram = (
     .rename(index={"Control Points": "Distogram"}, level="Features")
     .bip.preprocess()
 )
+
+df_distogram_cyclic = (
+    df_splinedist.pipe(shapes.df_to_cyclic_distograms)
+    .rename(index={"Control Points": "Distogram Cyclic"}, level="Features")
+    .bip.preprocess()
+)
 # %%
 
 df_cellprofiler = (
