@@ -165,10 +165,41 @@ def df_to_distogram(df):
     return df_to_distance_matrix(df).apply(
         lambda x: np.histogram(x, bins=len(x))[0], axis=1, result_type="expand"
     )
+
+def distance_matrix_to_cyclic_distograms(distmat):
+    cyclic_distograms = []
+    
+    distmat = np.array(distmat)
+    distmat_shape = np.sqrt(len(distmat)).astype('int')
+    distmat = np.reshape(distmat, (distmat_shape, distmat_shape))
+    
+    for i in range(1,len(distmat)//2 + 1):
+        a = [np.diagonal(distmat, -i).copy(), np.diagonal(distmat, len(distmat)-i).copy()]
+        a = [item for sublist in a for item in sublist]
+        a = np.array(a)
+        
+        distogram = np.histogram(a, bins = len(a))[0]
+        cyclic_distograms.append(distogram)
+        
+    cyclic_distograms = [item for sublist in cyclic_distograms for item in sublist]
+    cyclic_distograms = np.array(cyclic_distograms)
+    return cyclic_distograms
     
 def df_to_cyclic_distograms(df):
-    pass
-
+    df =  df.apply(
+            lambda x: pairwise.euclidean_distances(np.array([x[0::2], x[1::2]]).T)            
+            .flatten(),
+            axis=1,
+            result_type="expand",
+        )
+    
+    df =  df.apply(
+            lambda x: distance_matrix_to_cyclic_distograms(x)            
+            .flatten(),
+            axis=1,
+            result_type="expand",
+        )
+    return df
 
 
 # for augmentation in np.linspace(1,200,10).astype(int):
