@@ -196,19 +196,22 @@ important_features = (
 
 # %%
 sns.relplot(data=pca_df, x=0, y=1, col="Features", hue="Cell")
+plt.savefig(metadata("pca.pdf"), bbox_inches="tight")
 plt.show()
+plt.close()
 
 # plt.figure()
 sns.catplot(
     x="Principal Component",
     hue="Features",
     y="Explained Variance",
-    data=explained_variance_df.reset_index().pipe(save_csv, "pca.csv"),
+    data=explained_variance_df.reset_index().pipe(save_csv, "pca_explained_variance.csv"),
     legend_out=True,
     kind="bar",
 )
-plt.savefig(metadata("pca.pdf"), bbox_inches="tight")
+plt.savefig(metadata("pca_explained_variance.pdf"), bbox_inches="tight")
 plt.show()
+plt.close()
 
 
 # sns.catplot(
@@ -231,6 +234,7 @@ sns.catplot(
     sharey=False,
 )
 plt.show()
+plt.close()
 
 
 # df = df.iloc[:,random.sample(range(0, features), 32)]
@@ -269,6 +273,8 @@ plt.tight_layout()
 plt.colorbar(cax=cax)
 plt.savefig(metadata("fingerprints.pdf"), bbox_inches="tight")
 plt.show()
+plt.close()
+
 # %%
 
 
@@ -367,6 +373,7 @@ sns.catplot(
 )
 plt.savefig(metadata("feature_importance.pdf"))
 plt.show()
+plt.close()
 # %%
 
 hparams = [
@@ -383,7 +390,7 @@ hparams = [
         },
     },
     {
-        "df": df_splinedist.sample(5),
+        "df": df_splinedist.sample(1000),
         "name": "Control Points",
         "kwargs": {
             "model": Pipeline(
@@ -409,7 +416,15 @@ shap_df = pd.concat(
         for hparam in hparams
     ]
 )
+# %%
 
+shap_spline = shap_df.set_index(["Sample","Feature","Features"]).xs("Control Points",level="Features",drop_level=False)
+shap_spline.pipe(lambda df: df.iloc[:,0::2]+df.iloc[:,1::2])
+
+odds = shap_spline.groupby("Sample").iloc[1::2]
+odd = shap_spline.xs(0,level="Sample").iloc[0::2]
+
+# %%
 
 g = sns.catplot(
     y="Feature",
@@ -425,6 +440,7 @@ g = sns.catplot(
 )
 plt.savefig(metadata("shap.pdf"))
 plt.show()
+plt.close()
 
 
 # %%
