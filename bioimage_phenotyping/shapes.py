@@ -28,6 +28,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.base import BaseEstimator
 from sklearn.base import TransformerMixin
 
+
 def augment_at_theta(df, function, i, theta):
     return (
         df.apply(function, axis=1, theta=theta)
@@ -138,6 +139,7 @@ def augment_distance_matrix(df, axis=0):
 def augment_repeat(df, fold=1):
     return df.reindex(df.index.repeat(fold))
 
+
 def series_to_distance_matrix(x):
     distance_matrix = np.tril(
         pairwise.euclidean_distances(np.array([x[0::2], x[1::2]]).T)
@@ -160,44 +162,53 @@ def df_to_distance_matrix(df):
         .dropna(axis=1)
     )
 
-#%TODO Number of bins matters
-def df_to_distogram(df,hist_range=(0,1)):
-    return df_to_distance_matrix(df).apply(
-        lambda x: np.histogram(x, bins=len(x),range=range))[0], axis=1, result_type="expand")
 
-def distance_matrix_to_cyclic_distograms(distmat,hist_range=(0,1)):
+#%TODO Number of bins matters
+def df_to_distogram(df, hist_range=(0, 1)):
+    return df_to_distance_matrix(df).apply(
+        lambda x: np.histogram(x, bins=2 * len(x), range=hist_range)[0],
+        axis=1,
+        result_type="expand",
+    )
+
+
+def distance_matrix_to_cyclic_distograms(distmat, hist_range=(0, 1)):
     cyclic_distograms = []
-    
+
     distmat = np.array(distmat)
-    distmat_shape = np.sqrt(len(distmat)).astype('int')
+    distmat_shape = np.sqrt(len(distmat)).astype("int")
     distmat = np.reshape(distmat, (distmat_shape, distmat_shape))
-    
-    for i in range(1,len(distmat)//2 + 1):
-        a = [np.diagonal(distmat, -i).copy(), np.diagonal(distmat, len(distmat)-i).copy()]
+
+    for i in range(1, len(distmat) // 2 + 1):
+        a = [
+            np.diagonal(distmat, -i).copy(),
+            np.diagonal(distmat, len(distmat) - i).copy(),
+        ]
         a = [item for sublist in a for item in sublist]
         a = np.array(a)
-        
-        distogram = np.histogram(a, bins = len(a),range=hist_range)[0]
+
+        distogram = np.histogram(a, bins=2 * len(a), range=hist_range)[0]
         cyclic_distograms.append(distogram)
-        
+
     cyclic_distograms = [item for sublist in cyclic_distograms for item in sublist]
     cyclic_distograms = np.array(cyclic_distograms)
     return cyclic_distograms
-    
+
+
 def df_to_cyclic_distograms(df):
-    df =  df.apply(
-            lambda x: pairwise.euclidean_distances(np.array([x[0::2], x[1::2]]).T)            
-            .flatten(),
-            axis=1,
-            result_type="expand",
-        )
-    
-    df =  df.apply(
-            lambda x: distance_matrix_to_cyclic_distograms(x)            
-            .flatten(),
-            axis=1,
-            result_type="expand",
-        )
+    df = df.apply(
+        lambda x: pairwise.euclidean_distances(
+            np.array([x[0::2], x[1::2]]).T
+        ).flatten(),
+        axis=1,
+        result_type="expand",
+    )
+
+    df = df.apply(
+        lambda x: distance_matrix_to_cyclic_distograms(x).flatten(),
+        axis=1,
+        result_type="expand",
+    )
     return df
 
 
@@ -283,37 +294,33 @@ def get_score_report_per_level(df, level="Features"):
 #     plt.close()
 
 
-
-class DistanceMatrix(BaseEstimator,TransformerMixin):
+class DistanceMatrix(BaseEstimator, TransformerMixin):
     def __init__(self):
         pass
-    
-    def fit(self,X, y=None, **fit_params):
+
+    def fit(self, X, y=None, **fit_params):
         return self
-    
-    def transform(self,X, y=None, **fit_params):
-        X_trans = (
-            pd.DataFrame(X.copy())
-            .pipe(df_to_distance_matrix))
+
+    def transform(self, X, y=None, **fit_params):
+        X_trans = pd.DataFrame(X.copy()).pipe(df_to_distance_matrix)
 
         return X_trans
+
     def fit_transform(self, X, y=None, **fit_params):
         return self.transform(X, y, **fit_params)
 
 
-class Distogram(BaseEstimator,TransformerMixin):
+class Distogram(BaseEstimator, TransformerMixin):
     def __init__(self):
         pass
-    
-    def fit(self,X, y=None, **fit_params):
+
+    def fit(self, X, y=None, **fit_params):
         return self
-    
-    def transform(self,X, y=None, **fit_params):
-        X_trans = (
-            pd.DataFrame(X.copy())
-            .pipe(df_to_distogram))
+
+    def transform(self, X, y=None, **fit_params):
+        X_trans = pd.DataFrame(X.copy()).pipe(df_to_distogram)
 
         return X_trans
+
     def fit_transform(self, X, y=None, **fit_params):
         return self.transform(X, y, **fit_params)
-
