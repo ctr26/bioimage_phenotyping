@@ -127,7 +127,6 @@ df_splinedist = (
     Cellprofiler(**kwargs_splinedist)
     .get_data()
     .apply(shapes.align_coords_to_origin_np, axis=1, raw=True)
-    .pipe(normalise_nd)
     # .bip.preprocess()
     # .bip.preprocess()
     .bip.clean()
@@ -135,6 +134,7 @@ df_splinedist = (
     .set_index(["Features"], append=True)
     # .apply(shapes.align_coords_to_origin_np, axis=1, raw=True)
     .sample(frac=1)
+    .pipe(normalise_nd)
 )
 
 df_distance_matrix = (
