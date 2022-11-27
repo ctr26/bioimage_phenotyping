@@ -18,6 +18,7 @@ import random
 from bioimage_phenotyping import Cellprofiler
 sns.set()
 from bioimage_phenotyping import Cellprofiler
+from bioimage_phenotyping import features
 
 VARIABLES = ["Conc /uM", "Date", "Drug"]
 SAVE_FIG = True
@@ -121,7 +122,7 @@ df = (Cellprofiler(**kwargs)
       .bip.clean()
       .bip.preprocess())
 
-rows,features = df.shape
+# rows,features = df.shape
 # df = df.iloc[:,random.sample(range(0, features), 32)]
 
 
@@ -145,48 +146,7 @@ print(
 
 # %%
 
-def df_to_fingerprints(df, median_height=5, index_by="Drug",fig_size=(5,3)):
-        # DRUGS = list(df.index.levels[3])
-        LABELS = list(set(df.index.dropna().get_level_values(index_by).sort_values()))
-        LABELS.sort()
-        plt.rcParams["axes.grid"] = False
-        fig, axes = plt.subplots(nrows=len(LABELS) * 2, figsize=fig_size, dpi=150)
-        upper = np.mean(df.values.flatten()) + 1 * np.std(df.values.flatten())
-        upper
-        lower = np.mean(df.values.flatten()) - 1 * np.std(df.values.flatten())
-        lower
-        for i, ax in enumerate(axes.flat):
-            drug = LABELS[int(np.floor(i / 2))]
-            drug
-            image = df.xs(drug, level=index_by)
-            finger_print = image.median(axis=0)
-            finger_print_image = np.matlib.repmat(finger_print.values, median_height, 1)
-
-            if i & 1:
-                # im = ax.imshow(image, vmin=image.min().min(),
-                #                vmax=image.max().max(),cmap='Spectral')
-                im = ax.imshow(
-                    finger_print_image,
-                    vmin=lower,
-                    vmax=upper,
-                    cmap="Spectral",
-                    interpolation="nearest",
-                )
-                ax.set_xticklabels([])
-                ax.set_yticklabels([])
-            else:
-                im = ax.imshow(image, vmin=lower, vmax=upper, cmap="Spectral")
-                ax.title.set_text(drug)
-                # sns.heatmap(drug_df.values,ax=ax)
-                ax.set(adjustable="box", aspect="auto", autoscale_on=False)
-                ax.set_xticklabels([])
-                ax.set_yticklabels([])
-        
-        fig.subplots_adjust(right=0.8)
-        fig.colorbar(im, ax=axes.ravel().tolist())
-        # fig.colorbar(im, cax=cbar_ax)
-
-df_to_fingerprints(df
+features.plotting.df_to_fingerprints(df
                     .xs("Nuclei",level="Population type"),
                    index_by="Drug",
                    median_height=1)
@@ -195,8 +155,73 @@ df_to_fingerprints(df
 # plt.tight_layout()
 plt.savefig(metadata("finger_prints.pdf"))
 plt.show()
+# %%
+upper = np.nanmean(df.values.flatten()) + 2 * np.nanstd(df.values.flatten())
+lower = np.nanmean(df.values.flatten()) - 2 * np.nanstd(df.values.flatten())
 
+# %% Cell fingerprints
+g = sns.FacetGrid(
+    df.reset_index(level="Cell"),
+    # row="Drug",
+    col="Cell",
+    # height=2,
+    aspect=1.61,
+    sharey=False,
+    sharex=False,
+    height=3,
+    # col_wrap=2,
+)
+cax = g.fig.add_axes([1.015, 0.13, 0.015, 0.8])
+g.map_dataframe(
+    features.plotting.df_to_fingerprints_facet,
+    # "Drug",
+    "Nuclei",
+    "Drug",
+    "Cell",
+    cmap="Spectral",
+    cbar=True,
+    vmax=upper,
+    vmin=lower,
+)
+plt.tight_layout()
+plt.colorbar(cax=cax)
+plt.savefig(metadata("fingerprints_cells.pdf"), bbox_inches="tight")
+plt.show()
+plt.close()
 
+# %% Cell and drug finerprints
+
+sns.set()
+g = sns.FacetGrid(
+    df.reset_index(level=["Cell", "Drug"]),
+    row="Drug",
+    col="Cell",
+    # height=2,
+    aspect=1.61,
+    sharey=False,
+    sharex=False,
+    height=3,
+    # col_wrap=2,
+)
+cax = g.fig.add_axes([1.015, 0.13, 0.015, 0.8])
+g.map_dataframe(
+    features.plotting.df_to_fingerprints_facet,
+    "Drug",
+    "Nuclei",
+    "Drug",
+    "Cell",
+    cmap="Spectral",
+    cbar=True,
+    vmax=upper,
+    vmin=lower,
+)
+plt.tight_layout()
+plt.colorbar(cax=cax)
+plt.savefig(metadata("fingerprints_drugs.pdf"), bbox_inches="tight")
+plt.show()
+plt.close()
+
+# %%
 # importance = df.bip.feature_importances(variable="Cell").reset_index()
 
 # sns.barplot(
