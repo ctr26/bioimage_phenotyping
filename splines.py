@@ -1,5 +1,4 @@
 # %%
-
 import subprocess
 from sklearn.metrics.pairwise import euclidean_distances
 from bioimage_phenotyping import Cellprofiler
@@ -47,6 +46,9 @@ from sklearn.preprocessing import StandardScaler, PowerTransformer
 
 warnings.filterwarnings("ignore")
 sns.set()
+np.random.seed(42)
+
+
 from bioimage_phenotyping import Cellprofiler
 
 plt.ion()
@@ -294,7 +296,7 @@ def feature_importances(df, augment=None):
     )
 
 
-def scoring(df, augment=None, kfolds=5):
+def scoring(df, augment=None, kfolds=100):
     return df.dropna(axis=1).bip.get_scoring_df(
         variable="Cell", kfolds=kfolds, augment=augment
     )
@@ -358,7 +360,7 @@ g = sns.catplot(
     # x_ci="ci",
     # x_bins=5,
     data=scoring_df.pipe(save_csv, "scoring.csv"),
-    kind="bar",
+    kind="violin",
 )
 g.set_xticklabels(rotation=45)
 plt.tight_layout()
