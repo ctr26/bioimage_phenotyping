@@ -166,7 +166,7 @@ def df_to_distance_matrix(df):
 #%TODO Number of bins matters
 def df_to_distogram(df, hist_range=(0, 1)):
     return df_to_distance_matrix(df).apply(
-        lambda x: np.histogram(x, bins=2 * len(x), range=hist_range)[0],
+        lambda x: np.histogram(x, bins=64, range=hist_range)[0],
         axis=1,
         result_type="expand",
     )
@@ -187,7 +187,7 @@ def distance_matrix_to_cyclic_distograms(distmat, hist_range=(0, 1)):
         a = [item for sublist in a for item in sublist]
         a = np.array(a)
 
-        distogram = np.histogram(a, bins=2 * len(a), range=hist_range)[0]
+        distogram = np.histogram(a, bins=64, range=hist_range)[0]
         cyclic_distograms.append(distogram)
 
     cyclic_distograms = [item for sublist in cyclic_distograms for item in sublist]
