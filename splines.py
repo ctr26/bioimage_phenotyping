@@ -86,13 +86,13 @@ TEST_ROT = False
 # }
 
 kwargs_splinedist = {
-    "data_folder": "old_results/control_points",
+    "data_folder": "data/control_points",
     "nuclei_path": "objects_FilteredNuclei.csv",
 }
 
 
 kwargs_cellprofiler = {
-    "data_folder": "old_results/analysed/cellprofiler/splinedist",
+    "data_folder": "data/analysed/cellprofiler/splinedist",
     "nuclei_path": "objects_FilteredNuclei.csv",
 }
 
@@ -398,7 +398,7 @@ hparams = [
         },
     },
     {
-        "df": df_splinedist.sample(1000),
+        "df": df_splinedist.sample(5),
         "name": "Control Points",
         "kwargs": {
             "model": Pipeline(
@@ -429,8 +429,8 @@ shap_df = pd.concat(
 shap_spline = shap_df.set_index(["Sample","Feature","Features"]).xs("Control Points",level="Features",drop_level=False)
 shap_spline.pipe(lambda df: df.iloc[:,0::2]+df.iloc[:,1::2])
 
-odds = shap_spline.groupby("Sample").iloc[1::2]
-odd = shap_spline.xs(0,level="Sample").iloc[0::2]
+# odds = shap_spline.groupby("Sample").iloc[1::2]
+# odd = shap_spline.xs(0,level="Sample").iloc[0::2]
 
 # %%
 
