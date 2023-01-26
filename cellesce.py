@@ -1,7 +1,10 @@
 # %%
-import subprocess
-subprocess.run("make get.data",shell=True)
 # %%
+
+import subprocess
+
+subprocess.run("make get.data",shell=True)
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -15,6 +18,7 @@ from sklearn import model_selection
 import pathlib
 import random
 
+import bioimage_phenotyping as bip
 from bioimage_phenotyping import Cellprofiler
 sns.set()
 from bioimage_phenotyping import Cellprofiler
@@ -24,81 +28,10 @@ VARIABLES = ["Conc /uM", "Date", "Drug"]
 SAVE_FIG = True
 SAVE_CSV = True
 
-# data_folder = "analysed/210720 - ISO49+34 - projection_XY/unet_2022/project_XY_all"
-# data_folder = "analysed/210720 - ISO49+34 - projection_XY/unet_2022/project_XY_objects"
-
-# pd.read_csv("analysed/_2019_cellesce_unet_splineparameters_aligned/raw/projection_XY/Secondary.csv")
-
-kwargs = {
-    "data_folder": "analysed/210720 - ISO49+34 - projection_XY/unet_2022/project_XY_all",
-    "nuclei_path": "object_filteredNuclei.csv", 
-}
-kwargs = {
-    "data_folder": "analysed/210720 - ISO49+34 - projection_XY/unet_2022/project_XY_objects",
-    "nuclei_path": "Secondary.csv",
-}
-
-
-kwargs={
-    "data_folder": "analysed/_2019_cellesce_unet_splineparameters_aligned/raw/projection_XY/",
-    "nuclei_path": "Secondary.csv"
-}
-
-
-kwargs={
-    "data_folder": "analysed/_2019_cellesce_unet_splineparameters_aligned/raw/projection_XY/",
-    "nuclei_path": "Secondary.csv"
-}
-
-kwargs_cellprofiler= {
-    "data_folder": "old_results/analysed/210720 - ISO49+34 - projection_XY/unet_2022/project_XY_objects",
-    "nuclei_path": "object_filteredNuclei.csv",
-}
-
-
-# kwargs_splinedist = {
-#     "data_folder": "analysed/cellprofiler",
-#     "nuclei_path": "objects_FilteredNuclei.csv",
-# }
-
-
-# kwargs_splinedist = {
-#     "data_folder": "analysed/cellesce_splinedist_controlpoints",
-#     "nuclei_path": "Secondary.csv",
-# }
-
-# kwargs_splinedist = {
-#     "data_folder": "control_points",
-#     "nuclei_path": "objects_FilteredNuclei.csv",
-# }
-
-# kwargs_cellprofiler = {
-#     "data_folder": "analysed/cellprofiler/splinedist",
-#     "nuclei_path": "objects_FilteredNuclei.csv",
-# }
-
-
-# kwargs_cellprofiler = {
-#     "data_folder": "old_results/analysed/cellprofiler/splinedist_32",
-#     "nuclei_path": "objects_FilteredNuclei.csv",
-# }
-
 kwargs_cellprofiler = {
-    "data_folder": "results/unet",
-    "nuclei_path": "objects_FilteredNuclei.csv",
+        "data_folder": "results/unet",
+        "nuclei_path": "all_FilteredNuclei.csv",
 }
-
-kwargs_cellprofiler = {
-    "data_folder": "old_results/analysed/cellprofiler/splinedist_32",
-    "nuclei_path": "objects_FilteredNuclei.csv",
-}
-
-kwargs_cellprofiler = {
-    "data_folder": "results/unet",
-    "nuclei_path": "all_FilteredNuclei.csv",
-}
-
-
 
 kwargs = kwargs_cellprofiler
 
@@ -122,13 +55,10 @@ df = (Cellprofiler(**kwargs)
       .bip.clean()
       .bip.preprocess())
 
-# rows,features = df.shape
-# df = df.iloc[:,random.sample(range(0, features), 32)]
-
 
 df = pd.concat(
         [
-                df.assign(
+    df.assign(
                     **{"Population type": "Nuclei"}
                 ),
                 df
@@ -138,7 +68,6 @@ df = pd.concat(
                 .reorder_levels(order=df.index.names)
         ]).set_index("Population type",append=True)
 
-
 print(
     f'Organoids: {df.xs("Organoid",level="Population type").bip.simple_counts()}',
     f'Nuclei: {df.xs("Nuclei",level="Population type").bip.simple_counts()}',
@@ -146,13 +75,11 @@ print(
 
 # %%
 
-features.plotting.df_to_fingerprints(df
-                    .xs("Nuclei",level="Population type"),
-                   index_by="Drug",
-                   median_height=1)
+features.plotting.df_to_fingerprints(
+                df.xs("Nuclei",level="Population type"),
+                        index_by="Drug",
+                        median_height=1)
 
-# df_to_fingerprints(df,index_by="Drug", median_height=1)
-# plt.tight_layout()
 plt.savefig(metadata("finger_prints.pdf"))
 plt.show()
 # %%
@@ -189,7 +116,7 @@ plt.savefig(metadata("fingerprints_cells.pdf"), bbox_inches="tight")
 plt.show()
 plt.close()
 
-# %% Cell and drug finerprints
+# %% Cell and drug fingerprints
 
 sns.set()
 g = sns.FacetGrid(
@@ -221,14 +148,7 @@ plt.savefig(metadata("fingerprints_drugs.pdf"), bbox_inches="tight")
 plt.show()
 plt.close()
 
-# %%
-# importance = df.bip.feature_importances(variable="Cell").reset_index()
 
-# sns.barplot(
-#     y="Feature", x="Importance",
-#     data=df.bip.feature_importances(variable="Cell").reset_index()
-# )
-# plt.show()
 # %%
 plt.figure(figsize=(3, 50))
 sns.barplot(
@@ -260,20 +180,23 @@ def scoring(df, variable="Cell", augment=None, kfolds=5):
 
 # %%
 
+# Drug scoring
+
 plot = sns.catplot(
     x="Kind",
     y="Score",
     col="Metric",
     # row="Cell",
     ci=None,
-    hue="Population type",
+    # hue="Population type",
     data=(df
-        .groupby("Population type")
-        .apply(scoring)
+        .xs("Organoid",level="Population type")
+        .pipe(bip.dataset.get_scoring_df,variable="Drug")
         .set_index("Metric")
         .loc[['f1-score', 'recall','precision']]
         .reset_index()
-        .pipe(save_csv,"Cell_predictions_image_vs_nuclei.csv")),
+        .pipe(save_csv,"Cell_predictions_image_vs_nuclei.csv")
+        ),
     sharey=False,
     kind="bar",
     col_wrap=2,
@@ -281,6 +204,8 @@ plot = sns.catplot(
 plt.tight_layout()
 if SAVE_FIG: plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
 plt.show()
+
+# %%
 # %% Could do better with median per imagenumber
 # plot = sns.catplot(
 #     x="Kind",
@@ -394,7 +319,7 @@ sns.catplot(
     .reset_index(name="Nuclei"),
 )
 plt.tight_layout()
-if SAVE_FIG: plt.savefig(metadata("Nuclei_Summary.pdf"))
+plt.savefig(metadata("Nuclei_Summary.pdf"))
 plt.show()
 # %%
 plot = sns.histplot(
@@ -410,7 +335,7 @@ plot = sns.histplot(
 )
 plt.xticks(rotation=90)
 plt.tight_layout()
-if SAVE_FIG: plt.savefig(metadata("Date_summary_organoids.pdf"))
+plt.savefig(metadata("Date_summary_organoids.pdf"))
 plt.show()
 # %%
 
@@ -427,9 +352,54 @@ plot = sns.histplot(
 )
 plt.xticks(rotation=90)
 plt.tight_layout()
-if SAVE_FIG: plt.savefig(metadata("Date_summary_organoids.pdf"))
+plt.savefig(metadata("Date_summary_organoids.pdf"))
+plt.show()
+    
+# %%
+df_new = df.bip.select_features().bip.grouped_median("ObjectNumber")
+
+
+# %%
+plot = sns.catplot(
+    x="Kind",
+    y="Score",
+    col="Metric",
+    # row="Cell",
+    ci=None,
+    # hue="Metric",
+    data=(
+        df.bip.grouped_median("ObjectNumber").bip.get_score_report("Drug")
+        .reset_index()
+    ),
+    sharey=False,
+    kind="bar",
+).set_xticklabels(rotation=45)
 plt.show()
 # %%
+
+plot = sns.catplot(
+    x="Kind",
+    y="Score",
+    col="Metric",
+    row="Drug",
+    ci=None,
+    hue="Population type",
+    data=(df.xs("Nuclei",level="Population type")
+        .groupby("Population type")
+        .apply(scoring)
+        .set_index("Metric")
+        .loc[['f1-score', 'recall','precision']]
+        .reset_index()
+        .pipe(save_csv,"Cell_predictions_image_vs_nuclei.csv")),
+    sharey=False,
+    kind="bar",
+    col_wrap=2,
+).set_xticklabels(rotation=45)
+plt.tight_layout()
+if SAVE_FIG: plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
+plt.show()
+# %%
+
 # sns.clustermap(
 #     (
 #         df.bip.grouped_median("ObjectNumber")
@@ -489,9 +459,8 @@ plt.show()
 
 
     
-    
 # %%
-df_new = df.bip.select_features().bip.grouped_median("ObjectNumber")
+
 # importance = df.classification_report(model)
 # # %%
 # VARS = ["Cell", "Drug", "Conc /uM"]
@@ -528,24 +497,6 @@ df_new = df.bip.select_features().bip.grouped_median("ObjectNumber")
 
 # %%
 # data = report_df.set_index("Variable").xs("Drug")
-
-# %%
-plot = sns.catplot(
-    x="Kind",
-    y="Score",
-    col="Metric",
-    # row="Cell",
-    ci=None,
-    # hue="Metric",
-    data=(
-        df.bip.grouped_median("ObjectNumber").bip.get_score_report("Drug")
-        .reset_index()
-    ),
-    sharey=False,
-    kind="bar",
-).set_xticklabels(rotation=45)
-plt.show()
-
 # %%
 # data=pd.concat([
 #         get_score_report(df.bip.grouped_median("ObjectNumber"),"Cell").assign(**{"Population type": "Organoid"}),
