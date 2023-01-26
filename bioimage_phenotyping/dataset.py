@@ -71,16 +71,8 @@ def get_shap_df(shaps):
            .reset_index()
            .melt(id_vars="Sample",var_name="Feature",value_name="Shap Value"))
 
-@pd.api.extensions.register_dataframe_accessor("bip")
-class CellprofilerDataFrame:
-    def __init__(self, df):
-        self.df = df
-
-    def drop_from_list(self, list_in, item):
-        return drop_from_list(list_in, item)
-
-    def get_scoring_df(
-        self,
+def get_scoring_df(
+        df,
         variable="Cell",
         model=RandomForestClassifier(),
         kfolds=5,
@@ -95,13 +87,36 @@ class CellprofilerDataFrame:
         return pd.concat(
             [
                 (
-                    self.df.bip.get_score_report(
+                    df.bip.get_score_report(
                         variable=variable, model=model, groupby=groupby, augment=augment
                     ).assign(Fold=fold)
                 )
                 for fold in range(1, kfolds + 1)
             ]
         )
+        
+@pd.api.extensions.register_dataframe_accessor("bip")
+class CellprofilerDataFrame:
+    def __init__(self, df):
+        self.df = df
+
+    def drop_from_list(self, list_in, item):
+        return drop_from_list(list_in, item)
+    
+    def get_scoring_df(self,
+                        variable="Cell",
+                        model=RandomForestClassifier(),
+                        kfolds=5,
+                        groupby=None,
+                        augment=None):
+        return get_scoring_df(self.df,
+                        variable="Cell",
+                        model=model,
+                        kfolds=kfolds,
+                        groupby=groupby,
+                        augment=augment)
+        
+    
 
     # @functools.
     # Needs python 3.9
