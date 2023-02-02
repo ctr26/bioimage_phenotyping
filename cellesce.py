@@ -384,7 +384,8 @@ plot = sns.catplot(
     row="Drug",
     ci=None,
     hue="Population type",
-    data=(df.xs("Nuclei",level="Population type")
+    data=(df
+        # .xs("Nuclei",level="Population type")
         .groupby("Population type")
         .apply(scoring)
         .set_index("Metric")
@@ -398,7 +399,9 @@ plot = sns.catplot(
 plt.tight_layout()
 if SAVE_FIG: plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
 plt.show()
-# %%
+# %% Concentration dependent study
+print()
+# 
 
 # sns.clustermap(
 #     (
