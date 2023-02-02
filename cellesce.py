@@ -249,7 +249,7 @@ plot = sns.catplot(
     # row="Cell",
     ci=None,
     hue="Metric",
-    data=(df.xs("Organoid",level="Population type"),
+    data=(df.xs("Organoid",level="Population type")
             .bip.get_score_report("Cell")
             .assign(**{"Population type": "Organoid"})
             .set_index("Metric")
