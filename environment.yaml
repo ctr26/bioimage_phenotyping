@@ -1,4 +1,4 @@
-name: cellesce
+# name: cellesce
 channels:
   - bioconda
   - conda-forge
@@ -12,5 +12,7 @@ dependencies:
 - cellprofiler
 - seaborn
 - pip
+# - pip:
+  # - -e "../../."
 - pip:
-  - -e "../../."
+  - -e .
