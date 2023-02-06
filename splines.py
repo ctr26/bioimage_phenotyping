@@ -104,7 +104,7 @@ def save_csv(df, path):
     return df
 
 
-results_folder = f"results"
+results_folder = f"results/splines"
 pathlib.Path(results_folder).mkdir(parents=True, exist_ok=True)
 
 
@@ -169,7 +169,15 @@ df_cellprofiler = (
 )
 df_cellprofiler.columns = df_cellprofiler.columns.str.replace("AreaShape_", "")
 
-df = pd.concat([df_cellprofiler, df_splinedist, df_distance_matrix, df_distogram, df_distogram_cyclic])
+df = pd.concat(
+    [
+        df_cellprofiler,
+        df_splinedist,
+        df_distance_matrix,
+        df_distogram,
+        df_distogram_cyclic,
+    ]
+)
 
 
 print(
@@ -213,7 +221,9 @@ sns.catplot(
     x="Principal Component",
     hue="Features",
     y="Explained Variance",
-    data=explained_variance_df.reset_index().pipe(save_csv, "pca_explained_variance.csv"),
+    data=explained_variance_df.reset_index().pipe(
+        save_csv, "pca_explained_variance.csv"
+    ),
     legend_out=True,
     kind="bar",
 )
@@ -426,11 +436,13 @@ shap_df = pd.concat(
 )
 # %%
 
-shap_spline = shap_df.set_index(["Sample","Feature","Features"]).xs("Control Points",level="Features",drop_level=False)
-shap_spline.pipe(lambda df: df.iloc[:,0::2]+df.iloc[:,1::2])
+shap_spline = shap_df.set_index(["Sample", "Feature", "Features"]).xs(
+    "Control Points", level="Features", drop_level=False
+)
+shap_spline.pipe(lambda df: df.iloc[:, 0::2] + df.iloc[:, 1::2])
 
 # odds = shap_spline.groupby("Sample").iloc[1::2]
-odd = shap_spline.xs(0,level="Sample").iloc[0::2]
+odd = shap_spline.xs(0, level="Sample").iloc[0::2]
 
 # %%
 
