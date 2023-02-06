@@ -429,7 +429,7 @@ shap_df = pd.concat(
 shap_spline = shap_df.set_index(["Sample","Feature","Features"]).xs("Control Points",level="Features",drop_level=False)
 shap_spline.pipe(lambda df: df.iloc[:,0::2]+df.iloc[:,1::2])
 
-odds = shap_spline.groupby("Sample").iloc[1::2]
+# odds = shap_spline.groupby("Sample").iloc[1::2]
 odd = shap_spline.xs(0,level="Sample").iloc[0::2]
 
 # %%
@@ -455,4 +455,4 @@ plt.close()
 import os
 
 print("Exporting to notebook")
-# os.system(f"jupytext --to notebook splines.py --update --execute")
+os.system(f"jupytext --to notebook splines.py --update --execute")
