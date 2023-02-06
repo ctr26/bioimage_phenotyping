@@ -521,6 +521,7 @@ class CellprofilerDataFrame:
     #     return report_tall
 
 
+from .cellprofiler import BAD_COLS
 class Cellprofiler(pd.DataFrame):
     def __init__(
         self,
@@ -535,7 +536,8 @@ class Cellprofiler(pd.DataFrame):
         regex_pattern=r"(?P<Date>([\d]{4}\-[\d]{2}\-[\d]{2})).+_(?P<Cell>ISO[\d]+)_(?P<Drug>[A-Za-z0-9]+)_(?P<Concentration>[\d\w_-]+uM)(?:.+Position_(?P<Position>[\d]))?",
         SAVE_FIG=False,
         SAVE_CSV=False,
-        bad_cols_file="bad_cols.json",
+        bad_cols_file="",
+        bad_cols=BAD_COLS,
         CHANNELS=1,
         ZEROISCONTROL=True,
         **kwargs,
@@ -554,6 +556,7 @@ class Cellprofiler(pd.DataFrame):
             "SAVE_FIG": SAVE_FIG,
             "SAVE_CSV": SAVE_CSV,
             "bad_cols_file": bad_cols_file,
+            "bad_cols": bad_cols,
             "CHANNELS": CHANNELS,
             "ZEROISCONTROL": ZEROISCONTROL,
             "object_headers": object_headers,
@@ -597,7 +600,8 @@ class Cellprofiler(pd.DataFrame):
                 self.attrs["filename_headers"],
                 self.attrs["index_headers"],
             )
-            .pipe(drop_bad_cols, self.attrs["bad_cols_file"])
+            .pipe(drop_bad_cols,self.attrs["bad_cols"])
+            .pipe(drop_bad_cols_by_file, self.attrs["bad_cols_file"])
             .pipe(zero_is_control)
             .pipe(drop_bad_index)
             .pipe(force_numeric)
@@ -688,7 +692,6 @@ def force_numeric(df):
         # .dropna(axis=1)
         .sample(frac=1)
     )
-
 
 def nuclei_primary_filter(df):
     return df.filter(regex=r"^((?!NucleiObjectsPrimary).)*$")

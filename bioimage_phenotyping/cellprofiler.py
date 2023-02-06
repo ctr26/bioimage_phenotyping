@@ -1,5 +1,5 @@
 
-BAD_COLS = [
+BAD_COLS = {
     "Metadata_ChannelNumber_Organoid",
     "Metadata_FileLocation_Organoid",
     "Metadata_Frame_Organoid",
@@ -276,4 +276,4 @@ BAD_COLS = [
     "ExecutionTime_20MeasureObjectIntensityDistribution",
     "ExecutionTime_23MeasureObjectSizeShape",
     "ExecutionTime_26MeasureTexture"
-]
+}
