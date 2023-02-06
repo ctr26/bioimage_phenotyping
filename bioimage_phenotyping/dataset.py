@@ -183,8 +183,8 @@ class CellprofilerDataFrame:
         y_train = LabelEncoder().fit(y).transform(y_train)
         y_test = LabelEncoder().fit(y).transform(y_test)
 
-        model.fit(X_train, y_train)
-        model.score(X_test, y_test)
+        model.fit(X_train.values, y_train)
+        model.score(X_test.values, y_test)
 
         explainer = shap.Explainer(model.predict, X100, *args, **kwargs)
 
