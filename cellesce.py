@@ -3,7 +3,7 @@
 
 import subprocess
 
-subprocess.run("make get.data",shell=True)
+subprocess.run("make get.data", shell=True)
 
 import pandas as pd
 import seaborn as sns
@@ -20,6 +20,7 @@ import random
 
 import bioimage_phenotyping as bip
 from bioimage_phenotyping import Cellprofiler
+
 sns.set()
 from bioimage_phenotyping import Cellprofiler
 from bioimage_phenotyping import features
@@ -29,13 +30,14 @@ SAVE_FIG = True
 SAVE_CSV = True
 
 kwargs_cellprofiler = {
-        "data_folder": "results/unet",
-        "nuclei_path": "all_FilteredNuclei.csv",
+    "data_folder": "results/unet",
+    "nuclei_path": "all_FilteredNuclei.csv",
 }
 
 kwargs = kwargs_cellprofiler
 
-def save_csv(df,path):
+
+def save_csv(df, path):
     df.to_csv(metadata(path))
     return df
 
@@ -43,30 +45,28 @@ def save_csv(df,path):
 results_folder = f'{kwargs["data_folder"]}/results'
 pathlib.Path(results_folder).mkdir(parents=True, exist_ok=True)
 
+
 def metadata(x):
-    path = pathlib.Path(results_folder,x)
+    path = pathlib.Path(results_folder, x)
     print(path)
     return path
+
+
 # %%
 
 
-df = (Cellprofiler(**kwargs)
-      .get_data()
-      .bip.clean()
-      .bip.preprocess())
+df = Cellprofiler(**kwargs).get_data().bip.clean().bip.preprocess()
 
 
 df = pd.concat(
-        [
-    df.assign(
-                    **{"Population type": "Nuclei"}
-                ),
-                df
-                .bip.grouped_median("ObjectNumber")
-                .assign(**{"Population type": "Organoid","ObjectNumber":0})
-                .set_index("ObjectNumber",append=True)
-                .reorder_levels(order=df.index.names)
-        ]).set_index("Population type",append=True)
+    [
+        df.assign(**{"Population type": "Nuclei"}),
+        df.bip.grouped_median("ObjectNumber")
+        .assign(**{"Population type": "Organoid", "ObjectNumber": 0})
+        .set_index("ObjectNumber", append=True)
+        .reorder_levels(order=df.index.names),
+    ]
+).set_index("Population type", append=True)
 
 print(
     f'Organoids: {df.xs("Organoid",level="Population type").bip.simple_counts()}',
@@ -76,9 +76,8 @@ print(
 # %%
 
 features.plotting.df_to_fingerprints(
-                df.xs("Nuclei",level="Population type"),
-                        index_by="Drug",
-                        median_height=1)
+    df.xs("Nuclei", level="Population type"), index_by="Drug", median_height=1
+)
 
 plt.savefig(metadata("finger_prints.pdf"))
 plt.show()
@@ -152,13 +151,14 @@ plt.close()
 # %%
 plt.figure(figsize=(3, 50))
 sns.barplot(
-    y="Feature", x="Importance",
-    data=(df
-          .xs("Organoid",level="Population type")
-          .bip.feature_importances(variable="Cell")
-          .reset_index()
-          .pipe(save_csv,"importance_median_control_points.csv")
-          )
+    y="Feature",
+    x="Importance",
+    data=(
+        df.xs("Organoid", level="Population type")
+        .bip.feature_importances(variable="Cell")
+        .reset_index()
+        .pipe(save_csv, "importance_median_control_points.csv")
+    ),
 )
 plt.tight_layout()
 plt.savefig(metadata("importance_median_control_points.pdf"))
@@ -168,13 +168,12 @@ plt.show()
 #     y="Feature", x="Cumulative Importance",
 #     data=df.bip.feature_importances(variable="Cell").reset_index()
 # )
-# plt.tight_layout()   
+# plt.tight_layout()
+
 
 def scoring(df, variable="Cell", augment=None, kfolds=5):
-    return (
-        df
-        .dropna(axis=1)
-        .bip.get_scoring_df(variable=variable, kfolds=kfolds, augment=augment)
+    return df.dropna(axis=1).bip.get_scoring_df(
+        variable=variable, kfolds=kfolds, augment=augment
     )
 
 
@@ -189,20 +188,21 @@ plot = sns.catplot(
     # row="Cell",
     ci=None,
     # hue="Population type",
-    data=(df
-        .xs("Organoid",level="Population type")
-        .pipe(bip.dataset.get_scoring_df,variable="Drug")
+    data=(
+        df.xs("Organoid", level="Population type")
+        .pipe(bip.dataset.get_scoring_df, variable="Drug")
         .set_index("Metric")
-        .loc[['f1-score', 'recall','precision']]
+        .loc[["f1-score", "recall", "precision"]]
         .reset_index()
-        .pipe(save_csv,"Cell_predictions_image_vs_nuclei.csv")
-        ),
+        .pipe(save_csv, "Cell_predictions_image_vs_nuclei.csv")
+    ),
     sharey=False,
     kind="bar",
     col_wrap=2,
 ).set_xticklabels(rotation=45)
 plt.tight_layout()
-if SAVE_FIG: plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
+if SAVE_FIG:
+    plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
 plt.show()
 
 # %%
@@ -249,20 +249,22 @@ plot = sns.catplot(
     # row="Cell",
     ci=None,
     hue="Metric",
-    data=(df.xs("Organoid",level="Population type")
-            .bip.get_score_report("Cell")
-            .assign(**{"Population type": "Organoid"})
-            .set_index("Metric")
-            .loc[['f1-score', 'recall','precision']]
-            .reset_index()
-            .pipe(save_csv,"Cell_predictions_organoid.csv")
-            ),
+    data=(
+        df.xs("Organoid", level="Population type")
+        .bip.get_score_report("Cell")
+        .assign(**{"Population type": "Organoid"})
+        .set_index("Metric")
+        .loc[["f1-score", "recall", "precision"]]
+        .reset_index()
+        .pipe(save_csv, "Cell_predictions_organoid.csv")
+    ),
     sharey=False,
     kind="bar",
     # col_wrap=3,
 ).set_xticklabels(rotation=45)
 plt.tight_layout()
-if SAVE_FIG: plt.savefig(metadata("Cell_predictions_organoid.pdf"))
+if SAVE_FIG:
+    plt.savefig(metadata("Cell_predictions_organoid.pdf"))
 plt.show()
 
 # %%
@@ -284,7 +286,8 @@ plot = sns.catplot(
     col_wrap=2,
 ).set_xticklabels(rotation=45)
 plt.tight_layout()
-if SAVE_FIG: plt.savefig(metadata("Drug_predictions_per_organoid.pdf"))
+if SAVE_FIG:
+    plt.savefig(metadata("Drug_predictions_per_organoid.pdf"))
 plt.show()
 # %%
 sns.catplot(
@@ -303,7 +306,8 @@ sns.catplot(
     ).reset_index(name="Organoids"),
 )
 plt.tight_layout()
-if SAVE_FIG: plt.savefig(metadata("Organoid_Summary.pdf"))
+if SAVE_FIG:
+    plt.savefig(metadata("Organoid_Summary.pdf"))
 plt.show()
 # %%
 sns.catplot(
@@ -315,8 +319,7 @@ sns.catplot(
     kind="bar",
     orient="h",
     ci=None,
-    data=(df.bip.groupby_counts("ObjectNumber"))
-    .reset_index(name="Nuclei"),
+    data=(df.bip.groupby_counts("ObjectNumber")).reset_index(name="Nuclei"),
 )
 plt.tight_layout()
 plt.savefig(metadata("Nuclei_Summary.pdf"))
@@ -354,7 +357,7 @@ plt.xticks(rotation=90)
 plt.tight_layout()
 plt.savefig(metadata("Date_summary_organoids.pdf"))
 plt.show()
-    
+
 # %%
 df_new = df.bip.select_features().bip.grouped_median("ObjectNumber")
 
@@ -368,8 +371,7 @@ plot = sns.catplot(
     ci=None,
     # hue="Metric",
     data=(
-        df.bip.grouped_median("ObjectNumber").bip.get_score_report("Drug")
-        .reset_index()
+        df.bip.grouped_median("ObjectNumber").bip.get_score_report("Drug").reset_index()
     ),
     sharey=False,
     kind="bar",
@@ -384,24 +386,27 @@ plot = sns.catplot(
     row="Drug",
     ci=None,
     hue="Population type",
-    data=(df
+    data=(
+        df
         # .xs("Nuclei",level="Population type")
         .groupby("Population type")
         .apply(scoring)
         .set_index("Metric")
-        .loc[['f1-score', 'recall','precision']]
+        .loc[["f1-score", "recall", "precision"]]
         .reset_index()
-        .pipe(save_csv,"Cell_predictions_image_vs_nuclei.csv")),
+        .pipe(save_csv, "Cell_predictions_image_vs_nuclei.csv")
+    ),
     sharey=False,
     kind="bar",
     col_wrap=2,
 ).set_xticklabels(rotation=45)
 plt.tight_layout()
-if SAVE_FIG: plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
+if SAVE_FIG:
+    plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
 plt.show()
 # %% Concentration dependent study
 print()
-# 
+#
 
 # sns.clustermap(
 #     (
@@ -451,7 +456,6 @@ print()
 # print("Organoid Drug")
 
 
-
 # # fig_dims = (8, 6)
 
 # sns.barplot(
@@ -461,7 +465,6 @@ print()
 # plt.tight_layout()
 
 
-    
 # %%
 
 # importance = df.classification_report(model)
