@@ -81,6 +81,7 @@ features.plotting.df_to_fingerprints(
 
 plt.savefig(metadata("finger_prints.pdf"))
 plt.show()
+plt.close()
 # %%
 upper = np.nanmean(df.values.flatten()) + 2 * np.nanstd(df.values.flatten())
 lower = np.nanmean(df.values.flatten()) - 2 * np.nanstd(df.values.flatten())
@@ -163,6 +164,7 @@ sns.barplot(
 plt.tight_layout()
 plt.savefig(metadata("importance_median_control_points.pdf"))
 plt.show()
+plt.close()
 # %%
 # sns.barplot(
 #     y="Feature", x="Cumulative Importance",
@@ -204,7 +206,7 @@ plt.tight_layout()
 if SAVE_FIG:
     plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
 plt.show()
-
+plt.close()
 # %%
 # %% Could do better with median per imagenumber
 # plot = sns.catplot(
@@ -266,7 +268,7 @@ plt.tight_layout()
 if SAVE_FIG:
     plt.savefig(metadata("Cell_predictions_organoid.pdf"))
 plt.show()
-
+plt.close()
 # %%
 plot = sns.catplot(
     # x="Kind",
@@ -289,6 +291,8 @@ plt.tight_layout()
 if SAVE_FIG:
     plt.savefig(metadata("Drug_predictions_per_organoid.pdf"))
 plt.show()
+plt.close()
+
 # %%
 sns.catplot(
     y="Conc /uM",
@@ -309,6 +313,7 @@ plt.tight_layout()
 if SAVE_FIG:
     plt.savefig(metadata("Organoid_Summary.pdf"))
 plt.show()
+plt.close()
 # %%
 sns.catplot(
     y="Conc /uM",
@@ -324,6 +329,7 @@ sns.catplot(
 plt.tight_layout()
 plt.savefig(metadata("Nuclei_Summary.pdf"))
 plt.show()
+plt.close()
 # %%
 plot = sns.histplot(
     x="Date",
@@ -340,6 +346,7 @@ plt.xticks(rotation=90)
 plt.tight_layout()
 plt.savefig(metadata("Date_summary_organoids.pdf"))
 plt.show()
+plt.close()
 # %%
 
 plot = sns.histplot(
@@ -357,7 +364,7 @@ plt.xticks(rotation=90)
 plt.tight_layout()
 plt.savefig(metadata("Date_summary_organoids.pdf"))
 plt.show()
-
+plt.close()
 # %%
 df_new = df.bip.select_features().bip.grouped_median("ObjectNumber")
 
@@ -377,6 +384,7 @@ plot = sns.catplot(
     kind="bar",
 ).set_xticklabels(rotation=45)
 plt.show()
+plt.close()
 # %%
 
 plot = sns.catplot(
@@ -404,6 +412,7 @@ plt.tight_layout()
 if SAVE_FIG:
     plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
 plt.show()
+plt.close()
 # %% Concentration dependent study
 print()
 #
