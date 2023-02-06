@@ -56,45 +56,52 @@ import pandas as pd
 
 
 def grouped_median(df, group="ObjectNumber"):
-    return df.groupby(level=drop_from_index(df,group)).median()
+    return df.groupby(level=drop_from_index(df, group)).median()
+
 
 def drop_from_index(df, item):
     return drop_from_list(list(df.index.names), item)
+
 
 def drop_from_list(list_in, item):
     item = [item] if isinstance(item, str) else item
     return list(set(list_in) - set(item))
 
+
 def get_shap_df(shaps):
-    return (pd.DataFrame(shaps.values,columns=shaps.feature_names)
-           .rename_axis("Sample")
-           .reset_index()
-           .melt(id_vars="Sample",var_name="Feature",value_name="Shap Value"))
+    return (
+        pd.DataFrame(shaps.values, columns=shaps.feature_names)
+        .rename_axis("Sample")
+        .reset_index()
+        .melt(id_vars="Sample", var_name="Feature", value_name="Shap Value")
+    )
+
 
 def get_scoring_df(
-        df,
-        variable="Cell",
-        model=RandomForestClassifier(),
-        kfolds=5,
-        groupby=None,
-        augment=None,
-    ):
-        # score_list = []
-        # for fold in range(1,kfolds+1):
-        #     score = (self.df.bip.get_score_report(variable, model)
-        #              .assign(Fold=fold))
-        #     score_list.append(score)
-        return pd.concat(
-            [
-                (
-                    df.bip.get_score_report(
-                        variable=variable, model=model, groupby=groupby, augment=augment
-                    ).assign(Fold=fold)
-                )
-                for fold in range(1, kfolds + 1)
-            ]
-        )
-        
+    df,
+    variable="Cell",
+    model=RandomForestClassifier(),
+    kfolds=5,
+    groupby=None,
+    augment=None,
+):
+    # score_list = []
+    # for fold in range(1,kfolds+1):
+    #     score = (self.df.bip.get_score_report(variable, model)
+    #              .assign(Fold=fold))
+    #     score_list.append(score)
+    return pd.concat(
+        [
+            (
+                df.bip.get_score_report(
+                    variable=variable, model=model, groupby=groupby, augment=augment
+                ).assign(Fold=fold)
+            )
+            for fold in range(1, kfolds + 1)
+        ]
+    )
+
+
 @pd.api.extensions.register_dataframe_accessor("bip")
 class CellprofilerDataFrame:
     def __init__(self, df):
@@ -102,21 +109,23 @@ class CellprofilerDataFrame:
 
     def drop_from_list(self, list_in, item):
         return drop_from_list(list_in, item)
-    
-    def get_scoring_df(self,
-                        variable="Cell",
-                        model=RandomForestClassifier(),
-                        kfolds=5,
-                        groupby=None,
-                        augment=None):
-        return get_scoring_df(self.df,
-                        variable="Cell",
-                        model=model,
-                        kfolds=kfolds,
-                        groupby=groupby,
-                        augment=augment)
-        
-    
+
+    def get_scoring_df(
+        self,
+        variable="Cell",
+        model=RandomForestClassifier(),
+        kfolds=5,
+        groupby=None,
+        augment=None,
+    ):
+        return get_scoring_df(
+            self.df,
+            variable="Cell",
+            model=model,
+            kfolds=kfolds,
+            groupby=groupby,
+            augment=augment,
+        )
 
     # @functools.
     # Needs python 3.9
@@ -128,18 +137,22 @@ class CellprofilerDataFrame:
         augment=None,
         shap_samples=100,
         samples=None,
-        *args,**kwargs):
+        *args,
+        **kwargs,
+    ):
         return get_shap_df(
             self.get_shap_values(
-                    model,
-                    variable="Cell",
-                    groupby=None,
-                    augment=None,
-                    shap_samples=100,
-                    samples=None,
-                    *args,**kwargs)
+                model,
+                variable="Cell",
+                groupby=None,
+                augment=None,
+                shap_samples=100,
+                samples=None,
+                *args,
+                **kwargs,
             )
-    
+        )
+
     def get_shap_values(
         self,
         model,
@@ -148,7 +161,8 @@ class CellprofilerDataFrame:
         augment=None,
         shap_samples=100,
         samples=None,
-        *args,**kwargs,
+        *args,
+        **kwargs,
     ):
         df = self.df
         # X = np.array(df.apply(pd.to_numeric))
@@ -165,19 +179,17 @@ class CellprofilerDataFrame:
         # model = Pipeline([('Distogram', Distogram()),
         #                 ('scaler', StandardScaler()),
         #                 ('rf', RandomForestClassifier())])
-        
+
         y_train = LabelEncoder().fit(y).transform(y_train)
         y_test = LabelEncoder().fit(y).transform(y_test)
-        
+
         model.fit(X_train, y_train)
         model.score(X_test, y_test)
 
-        explainer = shap.Explainer(model.predict, X100,*args,**kwargs)
+        explainer = shap.Explainer(model.predict, X100, *args, **kwargs)
 
         shap_values = explainer(X)
         return shap_values
-    
-        
 
     def get_score_report(
         self,
@@ -268,7 +280,7 @@ class CellprofilerDataFrame:
         return report_tall
 
     def drop_from_index(self, item):
-        return drop_from_index(self.df,item)
+        return drop_from_index(self.df, item)
 
     # df.index.names.difference(["Cell"])
     # @functools.cache
@@ -335,7 +347,6 @@ class CellprofilerDataFrame:
         for group_name, df_group in df.groupby(
             groupby, sort=False, as_index=False, group_keys=False
         ):
-
             X = (
                 df_group.apply(lambda x: x)
                 .sort_index()
