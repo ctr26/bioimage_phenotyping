@@ -206,7 +206,7 @@ class CellprofilerDataFrame:
         X_train, X_test, y_train, y_test = df.bip.train_test_split(
             variable, groupby=groupby, augment=augment
         )
-        model.fit(X_train, y_train)
+        model.fit(X_train.values, y_train)
         return self.get_score_df_from_model(model, variable, X_test, y_test)
         # # y_pred = pd.Series(model.predict(X_test), index=X_test.index)
         # scoring = X_test.apply(lambda x: model.predict([x])[0], axis=1).reset_index(
@@ -298,7 +298,7 @@ class CellprofilerDataFrame:
         ).dropna(axis=axis)
 
     def isolation_forest(self):
-        return self.df.loc[IsolationForest().fit(self.df).predict(self.df) == 1]
+        return self.df.loc[IsolationForest().fit(self.df.values).predict(self.df) == 1]
 
     def clean(self):
         return self.df.bip.drop_sigma(5).bip.isolation_forest()
@@ -444,7 +444,7 @@ class CellprofilerDataFrame:
             # .balance_dataset(variable)
             .train_test_split(variable)
         )
-        pipe.fit(X_train, y_train)
+        pipe.fit(X_train.values, y_train)
         df = pd.DataFrame(pipe.transform(self.df), index=self.df.index)
         df.attrs.update(self.df.attrs)
         return df
@@ -468,7 +468,7 @@ class CellprofilerDataFrame:
                     variable, groupby=groupby, augment=augment, seed=fold
                 )
             )
-            model.fit(X_train, y_train)
+            model.fit(X_train.values, y_train)
 
             print(classification_report(y_test, model.predict(X_test)))
             print(metrics.cohen_kappa_score(y_test, model.predict(X_test)))
