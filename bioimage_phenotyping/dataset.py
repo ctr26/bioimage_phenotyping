@@ -694,12 +694,15 @@ def nuclei_primary_filter(df):
     return df.filter(regex=r"^((?!NucleiObjectsPrimary).)*$")
 
 
-def drop_bad_cols(df, bad_cols_file):
+def drop_bad_cols_by_file(df, bad_cols_file):
+    if bad_cols_file == "":
+        return df
     with open(bad_cols_file, "r") as f:
         # print(*raw_df_indexed.columns,sep='\n')
-        bad_cols = json.load(f)
-        return df.drop(bad_cols, axis=1, errors="ignore")
+        return df.pipe(drop_bad_cols,json.load(f))
 
+def drop_bad_cols(df,bad_cols):
+    return df.drop(columns=bad_cols, errors="ignore")
 
 def drop_bad_index(df):
     return df.reindex(df.index.dropna())
