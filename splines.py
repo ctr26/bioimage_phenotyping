@@ -142,7 +142,7 @@ df_splinedist = (
 df_distance_matrix = (
     (df_splinedist.pipe(shapes.df_to_distance_matrix))
     .rename(index={"Control Points": "Control Points Dist"}, level="Features")
-    .bip.preprocess()
+#     .bip.preprocess()
 )
 
 df_distogram = (
