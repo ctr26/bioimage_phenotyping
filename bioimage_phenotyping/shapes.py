@@ -187,7 +187,7 @@ def distance_matrix_to_cyclic_distograms(distmat):
         a = [item for sublist in a for item in sublist]
         a = np.array(a)
 
-        distogram = np.histogram(a, bins=64, range=0,1.414)[0]
+        distogram = np.histogram(a, bins=64, range=(0,1.414))[0]
         cyclic_distograms.append(distogram)
 
     cyclic_distograms = [item for sublist in cyclic_distograms for item in sublist]
