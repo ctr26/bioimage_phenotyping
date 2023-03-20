@@ -7,7 +7,7 @@ zip.results:
 install.snakemake.env:
 	mamba env create -f environment.yml --force
 
-get.data:
+get.cellesce.data:
 	wget -nc "https://zenodo.org/record/7267108/files/results_csv.zip"
 	unzip -n results_csv.zip
 
