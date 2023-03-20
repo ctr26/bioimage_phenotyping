@@ -6,24 +6,18 @@ import subprocess
 subprocess.run("make get.cellesce.data", shell=True)
 
 import pathlib
-import random
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from sklearn import metrics, model_selection
-from sklearn.decomposition import PCA
-from sklearn.ensemble import BaggingClassifier, RandomForestClassifier
-from sklearn.feature_selection import RFE, RFECV, SelectFromModel
-from sklearn.pipeline import Pipeline
 
 import bioimage_phenotyping as bip
 from bioimage_phenotyping import Cellprofiler
-
-sns.set()
 from bioimage_phenotyping import Cellprofiler, features
 
+sns.set()
+plt.ioff()
 VARIABLES = ["Conc /uM", "Date", "Drug"]
 SAVE_FIG = True
 SAVE_CSV = True
@@ -115,7 +109,6 @@ plt.colorbar(cax=cax)
 plt.savefig(metadata("fingerprints_cells.pdf"), bbox_inches="tight")
 plt.show()
 plt.close()
-print("OK")
 print("OK")
 # %% Cell and drug fingerprints
 
@@ -427,6 +420,11 @@ print("OK")
 # %% Concentration dependent study
 print()
 
-#%% Section on predicting similarity between 0 and 1 conc
-
+# %% Section on predicting similarity between 0 and 1 conc
+#
 df
+# %%
+import os
+
+print("Exporting to notebook")
+os.system(f"jupytext --to notebook notebooks/cellesce.py --update --execute")

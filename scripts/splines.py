@@ -1,42 +1,43 @@
 # %%
 import subprocess
+
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.metrics.pairwise import euclidean_distances
-from bioimage_phenotyping import Cellprofiler
+from sklearn.preprocessing import FunctionTransformer
+
 import bioimage_phenotyping.dataset as dataset
 
 # from bioimage_phenotyping.features import features
 import bioimage_phenotyping.shapes as shapes
-from sklearn.base import BaseEstimator
-from sklearn.base import TransformerMixin
-
-from sklearn.preprocessing import FunctionTransformer
+from bioimage_phenotyping import Cellprofiler
 
 subprocess.run("make get.data", shell=True)
 
 # %% Imports
 
-import pandas as pd
-import seaborn as sns
+import pathlib
+import warnings
+
+import dask.dataframe as dd
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
-import pathlib
+import pandas as pd
 import scipy
-import warnings
-from tqdm import tqdm
-import dask.dataframe as dd
+import seaborn as sns
 from sklearn import preprocessing
-
-from bioimage_phenotyping import shapes, utils, features
+from sklearn.decomposition import PCA
 
 # import shap
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.manifold import TSNE
 
 # from sklearn.model_selection import train_test_split
 # from sklearn.preprocessing import LabelEncoder
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, PowerTransformer
+from sklearn.preprocessing import PowerTransformer, StandardScaler
+from tqdm import tqdm
+
+from bioimage_phenotyping import features, shapes, utils
 
 # from sklearn.base import BaseEstimator
 # from sklearn.base import TransformerMixin

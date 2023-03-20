@@ -1,3 +1,7 @@
+# Installation
+
+    pip install .
+     
 # Pipeline and analysis tools for nuclear phenotyping
 
 This repository is designed for analysing images of nuclei using deep learning
@@ -7,8 +11,8 @@ Produce graphs
 
 Shapes:
 
-    python splines.py
+    python scripts/splines.py
 
 Shapes and images:
 
-    python notebook.py
+    python scripts/cellesce.py 
