@@ -55,7 +55,7 @@ def get_score_report(
         variable, groupby=groupby, augment=augment
     )
     model.fit(X_train.values, y_train)
-    return get_score_df_from_model(model, variable, X_test, y_test)
+    return score_df_from_model(model, variable, X_test, y_test)
 
 
 
@@ -99,7 +99,7 @@ def get_scoring_df(
     return pd.concat(
         [
             (
-                df.bip.get_score_report(df,
+                get_score_report(df,
                     variable=variable, model=model, groupby=groupby, augment=augment
                 ).assign(Fold=fold)
             )
@@ -112,33 +112,12 @@ def get_scoring_df(
 def train_test_split(
     df, variable="Cell", frac=0.8, augment=None, groupby=None, seed=42
 ):
-    # df = self.df.sample(frac=1,random_state=seed)
-
-    # g = df.groupby(level=variable,group_keys=False)
-    # df = g.apply(lambda x: x.sample(g.size().min()));df
-
-    # labels = df.reset_index()[[variable]].astype(str)
-
-    # This stops the model cheating
-    # y = df.reset_index()[[variable]].astype(str)
-    # return model_selection.train_test_split(df,y,stratify=y)
-
-    # X_train = df.groupby(groupby, as_index=False,group_keys=False).apply(
-    #     lambda x: x.sample(frac=frac)
-    # )
-
-    # groups = df.groupby(groupby, sort=False, as_index=False, group_keys=False)
-    # group_0 = groups.get_group(list(groups.groups)[0])
-    # group_1 = groups.get_group(list(groups.groups)[1])
-
-    # gss = GroupShuffleSplit(n_splits=1, train_size=frac, random_state=seed)
-    # groups = df.index.get_level_values(groupby)
     X = df
     y = df.index.to_frame()[[variable]].astype(str)
-    # (X_train_idx,X_test_idx), (y_train_idx,y_test_idx) = gss.split(X, y, groups)
+
     if groupby is not None:
         return groupby_train_split(
-            df, variable, groupby, frac=0.8, seed=42, augment=augment
+            df, variable, groupby, frac=0.8, seed=42,
         )
 
     if augment is not None:
@@ -150,29 +129,3 @@ def train_test_split(
 
     return model_selection.train_test_split(X, y, stratify=y, random_state=seed)
 
-    # train_idx, test_idx = next(gss.split(X, y, groups))
-
-    # X_train = X.iloc[train_idx]
-    # X_test = X.iloc[test_idx]
-
-    # y_train = y.iloc[train_idx]
-    # y_test = y.iloc[test_idx]
-
-    # return X_train, X_test, y_train, y_test
-
-    # X_train = (
-    #     df.groupby(groupby, sort=False, as_index=False, group_keys=False)
-    #     .sample(frac=1, random_state=seed)
-    #     .sort_index()
-    #     .sample(frac=0.8, random_state=seed)
-    # )
-
-    # if len(df) == len(X_train):
-    #     X_train = df.sample(frac=frac, random_state=seed).sort_index()
-
-    # dupe_df = pd.concat([df, X_train])
-    # X_test = dupe_df[~dupe_df.index.duplicated(keep=False)]
-    # y_train = X_train.index.to_frame()[[variable]].astype(str)
-    # y_test = X_test.index.to_frame()[[variable]].astype(str)
-    # # feature_df_in = feature_df_median_in
-    # return X_train, X_test, y_train, y_test

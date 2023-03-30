@@ -1,35 +1,26 @@
-import pandas as pd
-import shap
-from scipy import stats
-import seaborn as sns
-import pandas as pd
+import functools
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import scale
-from sklearn.decomposition import PCA
-from sklearn.metrics.pairwise import euclidean_distances
-from sklearn.ensemble import IsolationForest
-from sklearn.preprocessing import scale, power_transform, robust_scale, normalize
-from sklearn import model_selection
-from sklearn.ensemble import RandomForestClassifier, BaggingClassifier
-from sklearn import metrics
-from sklearn.metrics import classification_report
-from sklearn.pipeline import Pipeline
-from sklearn.feature_selection import SelectFromModel, RFECV, RFE
-
-import functools
+import pandas as pd
+import seaborn as sns
 import shap
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
+from scipy import stats
+from sklearn import metrics, model_selection
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.decomposition import PCA
+from sklearn.ensemble import (BaggingClassifier, IsolationForest,
+                              RandomForestClassifier)
+from sklearn.feature_selection import RFE, RFECV, SelectFromModel
+from sklearn.metrics import classification_report
+from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, PowerTransformer
-from sklearn.base import BaseEstimator
-from sklearn.base import TransformerMixin
+from sklearn.preprocessing import (LabelEncoder, PowerTransformer,
+                                   StandardScaler, normalize, power_transform,
+                                   robust_scale, scale)
 
-
-import os
+from .. import models
 
 
 # TODO, typee hinting
@@ -53,7 +44,6 @@ def get_shap_values(
     *args,
     **kwargs,
 ):
-
     # X = np.array(df.apply(pd.to_numeric))
     X, y = df, list(df.index.get_level_values(variable))
     X100 = shap.utils.sample(np.array(X), 100)
@@ -61,9 +51,9 @@ def get_shap_values(
     # y = df.index.get_level_values(variable)
     # y = DistanceMatrix().fit_transform(X)
 
-    X_train, X_test, y_train, y_test = df.apply(
-        pd.to_numeric
-    ).bip.train_test_split(variable, groupby=groupby, augment=augment)
+    X_train, X_test, y_train, y_test = df.apply(pd.to_numeric).bip.train_test_split(
+        variable, groupby=groupby, augment=augment
+    )
     # model = RandomForestClassifier()
     # model = Pipeline([('Distogram', Distogram()),
     #                 ('scaler', StandardScaler()),
@@ -81,7 +71,8 @@ def get_shap_values(
     return shap_values
 
 
-def feature_importances(
+
+def leaf_model(
     df,
     model_class=RandomForestClassifier,
     variable="Cell",
@@ -93,11 +84,8 @@ def feature_importances(
 
     for fold in range(1, kfolds + 1):
         model = model_class()
-        X_train, X_test, y_train, y_test = (
-            self.df
-            # .balance_dataset(variable)
-            .bip.train_test_split(variable, groupby=groupby, augment=augment, seed=fold)
-        )
+        X_train, X_test, y_train, y_test = models.train_test_split(df, variable, groupby=groupby, augment=augment, seed=fold)
+
         model.fit(X_train.values, y_train)
 
         print(classification_report(y_test, model.predict(X_test)))
@@ -114,7 +102,6 @@ def feature_importances(
         )
 
         importance["Cumulative Importance"] = importance.cumsum()["Importance"]
-        importance.attrs.update(self.df.attrs)
         importance_list.append(importance)
         # scores = self.get_score_df_from_model(model,variable,X_test,y_test)
 

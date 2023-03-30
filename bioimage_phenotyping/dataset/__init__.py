@@ -25,30 +25,36 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, PowerTransformer
 from sklearn.base import BaseEstimator
 from sklearn.base import TransformerMixin
-from .cellprofiler import Cellprofiler
+
 import pandas as pd
 
-import utils
-# import bioimage_phenotyping as bip
-from . import models
+from . import utils, cleaning
+from .cellprofiler import Cellprofiler
+from .. import models, transforms, features
+
 
 @pd.api.extensions.register_dataframe_accessor("bip")
 class BioImageDataFrame:
-    def __init__(self, df):
+    seed = 42
+
+    def __init__(self, df, seed=42):
         self.df = df
-    
-    def drop_sigma(n=5):
-        return cleaning.drop_sigma(self.df,n)
-      
+        if seed is not None:
+            np.random.seed(seed)
+            self.seed = seed
+
+    def drop_sigma(self, n=5):
+        return cleaning.drop_sigma(self.df, n)
+
     def clean(self):
-        return self.df.bip.drop_sigma(5).bip.model_rejection()
-    
+        return self.df.bip.drop_sigma(5).bip.model_inlier_rejection()
+
     def drop_from_index(self, item):
         return utils.drop_from_index(self.df, item)
-    
+
     def drop_from_list(self, list_in, item):
         return utils.drop_from_list(list_in, item)
-    
+
     def get_scoring_df(
         self,
         variable="Cell",
@@ -57,24 +63,29 @@ class BioImageDataFrame:
         groupby=None,
         augment=None,
     ):
-        return models.get_scoring_df(self.df,**locals())
+        return models.get_scoring_df(
+            self.df,
+            variable=variable,
+            model=model,
+            kfolds=kfolds,
+            groupby=groupby,
+            augment=augment,
+        )
 
     # @functools.
     # Needs python 3.9
-    def get_shap_df(
-        self,
-        model,
-        variable="Cell",
-        groupby=None,
-        augment=None,
-        shap_samples=100,
-        samples=None,
-        *args,
-        **kwargs,
-    ):
-        pass
-
-
+    # def get_shap_df(
+    #     self,
+    #     model,
+    #     variable="Cell",
+    #     groupby=None,
+    #     augment=None,
+    #     shap_samples=100,
+    #     samples=None,
+    #     *args,
+    #     **kwargs,
+    # ):
+    #     pass
 
     def get_score_report(
         self,
@@ -83,92 +94,121 @@ class BioImageDataFrame:
         augment=None,
         model=RandomForestClassifier(),
     ):
-        pass
+        return models.get_score_report(
+            self.df,
+            variable=variable,
+            groupby=groupby,
+            augment=augment,
+            model=model,
+        )
 
     def get_score_df_from_model(self, model, variable, X_test, y_test):
-        pass
-
-    def drop_from_index(self, item):
-        pass
+        return models.score_df_from_model(model, variable, X_test, y_test)
+        # return models.score_df_from_model(
+        #     self.df, model=model, variable=variable, X_test=X_test, y_test=y_test
+        # )
 
     # df.index.names.difference(["Cell"])
     # @functools.cache
     def grouped_median(self, group="ObjectNumber"):
-        pass
+        return utils.grouped_median(self.df, group)
 
     def bootstrap(self, groups, size, group="ObjectNumber"):
         pass
 
-    def drop_sigma(self, sigma=5, axis=0):
-        pass
+    def model_inlier_rejection(self, model=IsolationForest()):
+        return cleaning.model_inlier_rejection(self.df, model=model)
 
-    def model_rejection(self,model=IsolationForest()):
-        pass
-
-    def clean(self):
-        pass
-
-    def preprocess(self, type="power_transform"):
-        pass
+    def preprocess(self, mode="power_transform"):
+        return transforms.preprocess(self.df, mode=mode)
 
     def groupby_conj(self, group):
-        pass
+        utils.groupby_conj(self.df, group)
 
     def groupby_counts(self, group):
-        pass
+        utils.groupby_counts(self.df, group)
 
     def summary_counts(self, name="ObjectNumber"):
         pass
-    
+
     def simple_counts(self):
-        pass
+        utils.simple_counts(self.df)
 
     # Augment not implemented
-    def groupby_train_split(
-        self, df, variable, groupby, frac=0.8, seed=42, augment=None
-    ):
-        pass
+    def groupby_train_split(self, variable, groupby, frac=0.8, seed=42, augment=None):
+        return models.groupby_train_split(
+            self.df,
+            variable=variable,
+            groupby=groupby,
+            frac=frac,
+            seed=seed,
+        )
 
     def train_test_split(
-        self, variable="Cell", frac=0.8, augment=None, groupby=None, seed=42
+        self,
+        variable="Cell",
+        frac=0.8,
+        augment=None,
+        groupby=None,
     ):
-        pass
-    
+        return models.train_test_split(
+            self.df,
+            variable=variable,
+            frac=frac,
+            augment=augment,
+            groupby=groupby,
+            seed=self.seed,
+        )
+
     def balance_dataset(self, variable):
-        pass
+        utils.balance_dataset(self.df, variable)
 
-    def select_features(self, variable="Drug"):
-        pass
+    def select_features(self, variable="Drug", model=RandomForestClassifier()):
+        return features.select_from_model(self.df, variable=variable, model=model)
 
-    def feature_importances(
-        pass
+    def feature_importance(
+        self,
+        model_class=RandomForestClassifier,
+        variable="Cell",
+        groupby=None,
+        augment=None,
+        kfolds=1,
+    ):
+        return features.importance.leaf_model(
+            self.df,
+            model_class=model_class,
+            variable=variable,
+            groupby=groupby,
+            augment=augment,
+            kfolds=kfolds,
+        )
 
     def keeplevel(self, level):
         pass
 
-    # @functools.
-    # Needs python 3.9
-    # This is so confusing:
-    def get_shap_df(
-        self,
-        model,
-        variable="Cell",
-        groupby=None,
-        augment=None,
-        shap_samples=100,
-        samples=None,
-        *args,
-        **kwargs,
-    ):
-        return get_shap_df(
-            self.get_shap_values(
-                model,
-                variable="Cell",
-                groupby=None,
-                augment=None,
-                shap_samples=100,
-                samples=None,
-                *args,
-                **kwargs,
-            )
-        )
+    # # @functools.
+    # # Needs python 3.9
+    # # This is so confusing:
+    # def get_shap_df(
+    #     self,
+    #     model,
+    #     variable="Cell",
+    #     groupby=None,
+    #     augment=None,
+    #     shap_samples=100,
+    #     samples=None,
+    #     *args,
+    #     **kwargs,
+    # ):
+    #     return get_shap_df(
+    #         self.get_shap_values(
+    #             model,
+    #             variable="Cell",
+    #             groupby=None,
+    #             augment=None,
+    #             shap_samples=100,
+    #             samples=None,
+    #             *args,
+    #             **kwargs,
+    #         )
+    #     )

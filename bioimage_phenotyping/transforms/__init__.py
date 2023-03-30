@@ -21,21 +21,21 @@ from sklearn.preprocessing import (LabelEncoder, PowerTransformer,
                                    robust_scale, scale)
 
 preprocessor_lookup = {
-        "power_transform": lambda x: power_transform(x, method="yeo-johnson"),
-        "standard": lambda x: scale(x),
-        "robust_scale": lambda x: robust_scale(x),
-        "normalize": lambda x: normalize(x),
-    }
+    "power_transform": lambda x: power_transform(x, method="yeo-johnson"),
+    "standard": scale,
+    "robust_scale": robust_scale,
+    "normalize": normalize,
+}
 
-def preprocess(df, type="power_transform"):
 
-    preprocessor = preprocessor_lookup[type]
+def preprocess(df, mode="power_transform"):
+    # preprocessor = preprocessor_lookup[mode
     # scaled_df = pd.DataFrame(
     #     preprocessor(self), index=self.index, columns=self.columns
     # )
     df = pd.DataFrame(
-        preprocessor(self.df),
-        index=self.df.index,
-        columns=self.df.columns,
+        preprocessor_lookup[mode](df),
+        index=df.index,
+        columns=df.columns,
     )
     return df

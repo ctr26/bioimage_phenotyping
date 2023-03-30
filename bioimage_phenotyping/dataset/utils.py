@@ -46,10 +46,7 @@ def balance_dataset(df, variable):
     print(df.index.get_level_values(variable).value_counts())
     return df
 
-def drop_sigma(df, sigma=5, axis=0):
-    return df.mask(
-        df.apply(lambda df: (np.abs(stats.zscore(df)) > sigma))
-    ).dropna(axis=axis)
+
     
 
 # TODO fix or implement

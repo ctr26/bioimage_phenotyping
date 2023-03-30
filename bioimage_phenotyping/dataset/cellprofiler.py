@@ -1,3 +1,5 @@
+import os
+
 BAD_COLS = {
     "Metadata_ChannelNumber_Organoid",
     "Metadata_FileLocation_Organoid",
@@ -323,49 +325,6 @@ def drop_bad_cols(df, bad_cols):
 
 def drop_bad_index(df):
     return df.reindex(df.index.dropna())
-
-
-
-def zero_is_control(df):
-    index_headers = list(df.index.names)
-    df = df.reset_index()
-    # index = df.index.to_frame()
-    df["Drug"] = df["Drug"].where(df["Conc /uM"] != 0, other="Control")
-    return df.set_index(index_headers)
-
-
-def force_numeric(df):
-    return (
-        df.select_dtypes("number")
-        .apply(pd.to_numeric)
-        .select_dtypes("number")
-        .replace([np.inf, -np.inf], np.nan)
-        .dropna(axis=1)
-        # .replace([np.inf, -np.inf], np.nan)
-        # .dropna(axis=1)
-        .sample(frac=1)
-    )
-
-
-def nuclei_primary_filter(df):
-    return df.filter(regex=r"^((?!NucleiObjectsPrimary).)*$")
-
-
-def drop_bad_cols_by_file(df, bad_cols_file):
-    if bad_cols_file == "":
-        return df
-    with open(bad_cols_file, "r") as f:
-        # print(*raw_df_indexed.columns,sep='\n')
-        return df.pipe(drop_bad_cols, json.load(f))
-
-
-def drop_bad_cols(df, bad_cols):
-    return df.drop(columns=bad_cols, errors="ignore")
-
-
-def drop_bad_index(df):
-    return df.reindex(df.index.dropna())
-
 
 
 class Cellprofiler(pd.DataFrame):

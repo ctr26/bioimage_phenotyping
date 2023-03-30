@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy import matlib
 
 def df_to_fingerprints(df, median_height=5, index_by="Drug",fig_size=(5,3)):
         # DRUGS = list(df.index.levels[3])
@@ -8,15 +9,13 @@ def df_to_fingerprints(df, median_height=5, index_by="Drug",fig_size=(5,3)):
         plt.rcParams["axes.grid"] = False
         fig, axes = plt.subplots(nrows=len(LABELS) * 2, figsize=fig_size, dpi=150)
         upper = np.mean(df.values.flatten()) + 1 * np.std(df.values.flatten())
-        upper
         lower = np.mean(df.values.flatten()) - 1 * np.std(df.values.flatten())
-        lower
+
         for i, ax in enumerate(axes.flat):
             drug = LABELS[int(np.floor(i / 2))]
-            drug
             image = df.xs(drug, level=index_by)
             finger_print = image.median(axis=0)
-            finger_print_image = np.matlib.repmat(finger_print.values, median_height, 1)
+            finger_print_image = matlib.repmat(finger_print.values, median_height, 1)
 
             if i & 1:
                 # im = ax.imshow(image, vmin=image.min().min(),
