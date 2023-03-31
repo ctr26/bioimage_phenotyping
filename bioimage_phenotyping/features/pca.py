@@ -1,4 +1,4 @@
-from .. import utils
+from .. import dataset
 from sklearn.decomposition import PCA
 import numpy as np
 import pandas as pd
@@ -8,7 +8,7 @@ def fit_na(df,n_components=10):
 
 def fit_transform_na(df):
     pca_obj = fit_na(df)
-    return df.dropna(axis=1).pipe(utils.pca_fun,pca_obj)
+    return df.dropna(axis=1).pipe(dataset.utils.pca_fun,pca_obj)
 
 
 
