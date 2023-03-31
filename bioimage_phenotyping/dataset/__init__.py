@@ -1,36 +1,33 @@
-from scipy import stats
-import seaborn as sns
-import pandas as pd
+import functools
+
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import scale
-from sklearn.decomposition import PCA
-from sklearn.metrics.pairwise import euclidean_distances
-from sklearn.ensemble import IsolationForest
-from sklearn.preprocessing import scale, power_transform, robust_scale, normalize
-from sklearn import model_selection
-from sklearn.ensemble import RandomForestClassifier, BaggingClassifier
-from sklearn import metrics
-from sklearn.metrics import classification_report
-from sklearn.pipeline import Pipeline
-from sklearn.feature_selection import SelectFromModel, RFECV, RFE
-
-import functools
-import shap
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, PowerTransformer
-from sklearn.base import BaseEstimator
-from sklearn.base import TransformerMixin
-
 import pandas as pd
+import seaborn as sns
+import shap
+from scipy import stats
+from sklearn import metrics, model_selection
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.decomposition import PCA
+from sklearn.ensemble import BaggingClassifier, IsolationForest, RandomForestClassifier
+from sklearn.feature_selection import RFE, RFECV, SelectFromModel
+from sklearn.metrics import classification_report
+from sklearn.metrics.pairwise import euclidean_distances
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import (
+    LabelEncoder,
+    PowerTransformer,
+    StandardScaler,
+    normalize,
+    power_transform,
+    robust_scale,
+    scale,
+)
 
-from . import utils, cleaning
+from .. import features, models, transforms
+from . import cleaning, utils
 from .cellprofiler import Cellprofiler
-from .. import models, transforms, features
 
 
 @pd.api.extensions.register_dataframe_accessor("bip")
@@ -123,19 +120,19 @@ class BioImageDataFrame:
         return transforms.preprocess(self.df, mode=mode)
 
     def groupby_conj(self, group):
-        utils.groupby_conj(self.df, group)
+        return utils.groupby_conj(self.df, group)
 
     def groupby_counts(self, group):
-        utils.groupby_counts(self.df, group)
+        return utils.groupby_counts(self.df, group)
 
     def summary_counts(self, name="ObjectNumber"):
         pass
 
     def simple_counts(self):
-        utils.simple_counts(self.df)
+        return utils.simple_counts(self.df)
 
     # Augment not implemented
-    def groupby_train_split(self, variable, groupby, frac=0.8, seed=42, augment=None):
+    def groupby_train_split(self, variable, groupby, frac=0.8, seed=42):
         return models.groupby_train_split(
             self.df,
             variable=variable,
@@ -161,7 +158,7 @@ class BioImageDataFrame:
         )
 
     def balance_dataset(self, variable):
-        utils.balance_dataset(self.df, variable)
+        return utils.balance_dataset(self.df, variable)
 
     def select_features(self, variable="Drug", model=RandomForestClassifier()):
         return features.select_from_model(self.df, variable=variable, model=model)
@@ -184,7 +181,7 @@ class BioImageDataFrame:
         )
 
     def keeplevel(self, level):
-        pass
+        return utils.keeplevel(self.df, level)
 
     # # @functools.
     # # Needs python 3.9
