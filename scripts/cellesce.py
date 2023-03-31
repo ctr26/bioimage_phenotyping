@@ -1,29 +1,34 @@
 # %%
-# %%
 
-import subprocess
-
-subprocess.run("make get.cellesce.data", shell=True)
-
+import os
 import pathlib
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+
+# Set the default show behavior to non-blocking
+mpl.rcParams["backend"] = "TkAgg"
+mpl.rcParams["interactive"] = True
+
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
 
-import bioimage_phenotyping as bip
-from bioimage_phenotyping import Cellprofiler
+# import bioimage_phenotyping as bip
 from bioimage_phenotyping import Cellprofiler, features
 
+# subprocess.run("make get.cellesce.data", shell=True)
 sns.set()
-plt.ioff()
+
+
 VARIABLES = ["Conc /uM", "Date", "Drug"]
-SAVE_FIG = True
+SHOW_PLOTS = False
+SAVE_FIG = False
 SAVE_CSV = True
 
 kwargs_cellprofiler = {
-    "data_folder": "results/unet",
+    "data_folder": "data/results/unet",
     "nuclei_path": "all_FilteredNuclei.csv",
 }
 
