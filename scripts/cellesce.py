@@ -73,19 +73,28 @@ print(
 
 # %%
 
+info = "finger_prints"
 features.plotting.df_to_fingerprints(
     df.xs("Nuclei", level="Population type"), index_by="Drug", median_height=1
 )
 
-plt.savefig(metadata("finger_prints.pdf"))
-plt.show()
-plt.close()
-print("OK")
+if SAVE_FIG:
+    plt.savefig(metadata(f"{info}.pdf"))
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+print(info)
 # %%
-upper = np.nanmean(df.values.flatten()) + 2 * np.nanstd(df.values.flatten())
-lower = np.nanmean(df.values.flatten()) - 2 * np.nanstd(df.values.flatten())
+
+upper = np.nanmean(df.values.flatten()) + 3 * np.nanstd(df.values.flatten())
+lower = np.nanmean(df.values.flatten()) - 3 * np.nanstd(df.values.flatten())
 
 # %% Cell fingerprints
+
+info = "fingerprints_cells"
+
 g = sns.FacetGrid(
     df.reset_index(level="Cell"),
     # row="Drug",
@@ -111,11 +120,18 @@ g.map_dataframe(
 )
 plt.tight_layout()
 plt.colorbar(cax=cax)
-plt.savefig(metadata("fingerprints_cells.pdf"), bbox_inches="tight")
-plt.show()
-plt.close()
-print("OK")
+if SAVE_FIG:
+    plt.savefig(metadata(f"{info}.pdf"), bbox_inches="tight")
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+print(info)
 # %% Cell and drug fingerprints
+
+
+info = "fingerprints_drugs"
 
 sns.set()
 g = sns.FacetGrid(
@@ -143,28 +159,39 @@ g.map_dataframe(
 )
 plt.tight_layout()
 plt.colorbar(cax=cax)
-plt.savefig(metadata("fingerprints_drugs.pdf"), bbox_inches="tight")
-plt.show()
-plt.close()
-print("OK")
+if SAVE_FIG:
+    plt.savefig(metadata(f"{info}.pdf"), bbox_inches="tight")
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+print(info)
 
 
 # %%
+
+info = "importance_median_control_points"
 plt.figure(figsize=(3, 50))
 sns.barplot(
     y="Feature",
     x="Importance",
     data=(
         df.xs("Organoid", level="Population type")
-        .bip.feature_importances(variable="Cell")
+        .bip.feature_importance(variable="Cell")
         .reset_index()
-        .pipe(save_csv, "importance_median_control_points.csv")
+        .pipe(save_csv, f"{info}.csv")
     ),
 )
 plt.tight_layout()
-plt.savefig(metadata("importance_median_control_points.pdf"))
-plt.show()
-print("OK")
+if SAVE_FIG:
+    plt.savefig(metadata(f"{info}.pdf"))
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+print(info)
 # %%
 # sns.barplot(
 #     y="Feature", x="Cumulative Importance",
@@ -182,21 +209,22 @@ def scoring(df, variable="Cell", augment=None, kfolds=5):
 # %%
 
 # Drug scoring
-
+info = "cell_predictions_image_vs_nuclei"
 plot = sns.catplot(
     x="Kind",
     y="Score",
     col="Metric",
     # row="Cell",
-    ci=None,
+    errorbar=None,
     # hue="Population type",
     data=(
         df.xs("Organoid", level="Population type")
-        .pipe(bip.dataset.get_scoring_df, variable="Drug")
+        .bip.get_scoring_df(variable="Drug")
+        # .pipe(bip.get_scoring_df, variable="Drug")
         .set_index("Metric")
         .loc[["f1-score", "recall", "precision"]]
         .reset_index()
-        .pipe(save_csv, "Cell_predictions_image_vs_nuclei.csv")
+        .pipe(save_csv, f"{info}.csv")
     ),
     sharey=False,
     kind="bar",
@@ -204,10 +232,13 @@ plot = sns.catplot(
 ).set_xticklabels(rotation=45)
 plt.tight_layout()
 if SAVE_FIG:
-    plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
-plt.show()
-plt.close()
-print("OK")
+    plt.savefig(metadata(f"{info}.pdf"))
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+print(info)
 # %%
 # %% Could do better with median per imagenumber
 # plot = sns.catplot(
@@ -215,7 +246,7 @@ print("OK")
 #     y="Score",
 #     col="Metric",
 #     # row="Cell",
-#     ci=None,
+#     errorbar=None,
 #     hue="Population type",
 #     data=pd.concat(
 #         [
@@ -240,17 +271,17 @@ print("OK")
 # ).set_xticklabels(rotation=45)
 # plt.tight_layout()
 # if SAVE_FIG: plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
-# plt.show()
+# if SHOW_PLOTS: plt.show()
 
 # %%
 
-
+info = "cell_predictions_organoid"
 plot = sns.catplot(
     x="Kind",
     y="Score",
     # col="Metric",
     # row="Cell",
-    ci=None,
+    errorbar=None,
     hue="Metric",
     data=(
         df.xs("Organoid", level="Population type")
@@ -259,7 +290,7 @@ plot = sns.catplot(
         .set_index("Metric")
         .loc[["f1-score", "recall", "precision"]]
         .reset_index()
-        .pipe(save_csv, "Cell_predictions_organoid.csv")
+        .pipe(save_csv, f"{info}.csv")
     ),
     sharey=False,
     kind="bar",
@@ -267,17 +298,23 @@ plot = sns.catplot(
 ).set_xticklabels(rotation=45)
 plt.tight_layout()
 if SAVE_FIG:
-    plt.savefig(metadata("Cell_predictions_organoid.pdf"))
-plt.show()
-plt.close()
-print("OK")
+    plt.savefig(metadata(f"{info}.pdf"))
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+
+print(info)
 # %%
+
+info = "Drug_predictions_per_organoid"
 plot = sns.catplot(
     # x="Kind",
     y="Score",
     col="Metric",
     x="Cell",
-    ci=None,
+    errorbar=None,
     hue="Kind",
     data=(
         df.bip.grouped_median("ObjectNumber")
@@ -291,12 +328,17 @@ plot = sns.catplot(
 ).set_xticklabels(rotation=45)
 plt.tight_layout()
 if SAVE_FIG:
-    plt.savefig(metadata("Drug_predictions_per_organoid.pdf"))
-plt.show()
-plt.close()
-print("OK")
+    plt.savefig(metadata(f"{info}.pdf"))
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+print(f"{info}")
+
 
 # %%
+info = "organoid_summary"
 sns.catplot(
     y="Conc /uM",
     hue="Drug",
@@ -305,7 +347,7 @@ sns.catplot(
     sharex=True,
     kind="bar",
     orient="h",
-    ci=None,
+    errorbar=None,
     data=(
         df
         #   .grouped_median("ObjectNumber")
@@ -314,11 +356,16 @@ sns.catplot(
 )
 plt.tight_layout()
 if SAVE_FIG:
-    plt.savefig(metadata("Organoid_Summary.pdf"))
-plt.show()
-plt.close()
-print("OK")
+    plt.savefig(metadata(f"{info}.pdf"))
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+print(info)
 # %%
+
+info = "nuclei_summary"
 sns.catplot(
     y="Conc /uM",
     hue="Drug",
@@ -327,34 +374,21 @@ sns.catplot(
     sharex=True,
     kind="bar",
     orient="h",
-    ci=None,
+    errorbar=None,
     data=(df.bip.groupby_counts("ObjectNumber")).reset_index(name="Nuclei"),
 )
 plt.tight_layout()
-plt.savefig(metadata("Nuclei_Summary.pdf"))
-plt.show()
-plt.close()
-print("OK")
-# %%
-plot = sns.histplot(
-    x="Date",
-    weights="Organoids",
-    hue="Drug",
-    data=(
-        df.bip.grouped_median("ObjectNumber")
-        .bip.groupby_counts("ImageNumber")
-        .reset_index(name="Organoids")
-    ),
-    multiple="stack",
-)
-plt.xticks(rotation=90)
-plt.tight_layout()
-plt.savefig(metadata("Date_summary_organoids.pdf"))
-plt.show()
-plt.close()
-print("OK")
+if SAVE_FIG:
+    plt.savefig(metadata(f"{info}.pdf"))
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+print(info)
 # %%
 
+info = "date_summary_organoids"
 plot = sns.histplot(
     x="Date",
     weights="Organoids",
@@ -368,21 +402,48 @@ plot = sns.histplot(
 )
 plt.xticks(rotation=90)
 plt.tight_layout()
-plt.savefig(metadata("Date_summary_organoids.pdf"))
-plt.show
-plt.close()
-print("OK")
+if SAVE_FIG:
+    plt.savefig(metadata(f"{info}.pdf"))
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+print(info)
+# %%
+info = "date_summary_organoid"
+plot = sns.histplot(
+    x="Date",
+    weights="Organoids",
+    hue="Drug",
+    data=(
+        df.bip.grouped_median("ObjectNumber")
+        .bip.groupby_counts("ImageNumber")
+        .reset_index(name="Organoids")
+    ),
+    multiple="stack",
+)
+plt.xticks(rotation=90)
+plt.tight_layout()
+if SAVE_FIG:
+    plt.savefig(metadata(f"{info}.pdf"))
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+print(info)
 # %%
 df_new = df.bip.select_features().bip.grouped_median("ObjectNumber")
 
 
 # %%
+info = "drug_predictions_per_organoid"
 plot = sns.catplot(
     x="Kind",
     y="Score",
     col="Metric",
     # row="Cell",
-    ci=None,
+    errorbar=None,
     # hue="Metric",
     data=(
         df.bip.grouped_median("ObjectNumber").bip.get_score_report("Drug").reset_index()
@@ -390,17 +451,39 @@ plot = sns.catplot(
     sharey=False,
     kind="bar",
 ).set_xticklabels(rotation=45)
-plt.show()
-plt.close()
-print("OK")
-# %%
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+print(info)
 
 plot = sns.catplot(
     x="Kind",
     y="Score",
     col="Metric",
+    # row="Cell",
+    errorbar=None,
+    # hue="Metric",
+    data=(
+        df.bip.grouped_median("ObjectNumber").bip.get_score_report("Drug").reset_index()
+    ),
+    sharey=False,
+    kind="bar",
+).set_xticklabels(rotation=45)
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+# %%
+info = "cell_predictions_image_vs_nuclei"
+plot = sns.catplot(
+    x="Kind",
+    y="Score",
+    col="Metric",
     row="Drug",
-    ci=None,
+    errorbar=None,
     hue="Population type",
     data=(
         df
@@ -410,7 +493,7 @@ plot = sns.catplot(
         .set_index("Metric")
         .loc[["f1-score", "recall", "precision"]]
         .reset_index()
-        .pipe(save_csv, "Cell_predictions_image_vs_nuclei.csv")
+        .pipe(save_csv, f"{info}.csv")
     ),
     sharey=False,
     kind="bar",
@@ -418,18 +501,19 @@ plot = sns.catplot(
 ).set_xticklabels(rotation=45)
 plt.tight_layout()
 if SAVE_FIG:
-    plt.savefig(metadata("Cell_predictions_image_vs_nuclei.pdf"))
-plt.show()
-plt.close()
-print("OK")
-# %% Concentration dependent study
-print()
+    plt.savefig(metadata(f"{info}.pdf"))
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+print(info)
+
 
 # %% Section on predicting similarity between 0 and 1 conc
 #
-df
 # %%
-import os
+
 
 print("Exporting to notebook")
-os.system(f"jupytext --to notebook notebooks/cellesce.py --update --execute")
+os.system("jupytext --to notebook notebooks/cellesce.py --update --execute")
