@@ -7,6 +7,11 @@ data_dir = "data"
 ext = ".lif"
 glob_str = f"{data_dir}/**/*{ext}"
 files = glob(glob_str,recursive=True)
-ims = [pims.Bioformats(file) for file in files]
+
+# https://github.com/soft-matter/pims/pull/403
+pims.bioformats.download_jar(version="6.7.0")
+                        
+# ims = [pims.Bioformats(file) for file in files]
 
 print("ok")
+im = pims.Bioformats(files[0])
