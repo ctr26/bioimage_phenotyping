@@ -1,2 +1,2 @@
 from .dataset import Cellprofiler
-from . import dataset,features,models,transforms
+from . import dataset,features,models,transforms,segmentation
