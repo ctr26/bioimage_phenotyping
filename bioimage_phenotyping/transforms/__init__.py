@@ -1,6 +1,3 @@
-from . import pca,plotting,importance
-from .. import models
-
 import functools
 
 import matplotlib.pyplot as plt
@@ -23,14 +20,22 @@ from sklearn.preprocessing import (LabelEncoder, PowerTransformer,
                                    StandardScaler, normalize, power_transform,
                                    robust_scale, scale)
 
+preprocessor_lookup = {
+    "power_transform": lambda x: power_transform(x, method="yeo-johnson"),
+    "standard": scale,
+    "robust_scale": robust_scale,
+    "normalize": normalize,
+}
 
-def select_from_model(df, variable="Drug",model=RandomForestClassifier()):
-    pipe = Pipeline(
-        [("PCA", PCA()), ("modelselect", SelectFromModel(model))]
+
+def preprocess(df, mode="power_transform"):
+    # preprocessor = preprocessor_lookup[mode
+    # scaled_df = pd.DataFrame(
+    #     preprocessor(self), index=self.index, columns=self.columns
+    # )
+    df = pd.DataFrame(
+        preprocessor_lookup[mode](df),
+        index=df.index,
+        columns=df.columns,
     )
-    X_train, X_test, y_train, y_test = (
-        # .balance_dataset(variable)
-        models.train_test_split(df,variable)
-    )
-    pipe.fit(X_train.values, y_train)
-    return pd.DataFrame(pipe.transform(df), index=df.index)
+    return df
