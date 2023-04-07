@@ -6,7 +6,7 @@ from glob import glob
 import matplotlib.pyplot as plt
 data_dir = "data"
 import bioimage_phenotyping as bip
-from bip.segmentation import Segmenter
+from bioimage_phenotyping.segmentation import WatershedSegmenter
 
 # Lif files are the brightfield images 
 ext = ".lif"
@@ -23,22 +23,26 @@ im = pims.Bioformats(files[0])
 
 # DAPI
 
-im.default_coords['c'] = 0
+# im.default_coords['c'] = 0
 
 
 
-# Brightfield
+# # Brightfield
 
-im.default_coords['c'] = 1
-
-plt.imshow(im[0])
+# im.default_coords['c'] = 1
 
 image_2D = im[0]
+plt.imshow(image_2D)
 
 
 
-Segmenter()
-image_2D
 
+out = WatershedSegmenter().process(image_2D)
+# from skimage import filters, segmentation, morphology
+
+
+
+# out = WatershedSegmenter()._apply_binary_threshold(-1*image_2D)
+print(out)
     
 
