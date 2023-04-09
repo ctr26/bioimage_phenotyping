@@ -39,20 +39,20 @@ class ImageProcessingPipeline:
         self.steps.append(step)
 
     @singledispatchmethod
-    def process(self, image):
+    def __call__(self, image):
         raise TypeError("Unsupported image type")
 
-    @process.register(np.ndarray)
+    @__call__.register(np.ndarray)
     def _process_numpy(self, image: np.ndarray) -> np.ndarray:
         result = image
         for step in self.steps:
             result = step(result)
         return result
 
-    @process.register(PIL.Image.Image)
+    @__call__.register(PIL.Image.Image)
     def _process_PIL(self, image: PIL.Image.Image) -> PIL.Image:
         return NotImplemented
 
-    @process.register(da.Array)
+    @__call__.register(da.Array)
     def _process_dask(self, image: da.Array) -> da.Array:
         return NotImplemented
