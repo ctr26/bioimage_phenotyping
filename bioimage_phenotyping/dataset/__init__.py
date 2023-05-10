@@ -25,7 +25,7 @@ from sklearn.preprocessing import (
     scale,
 )
 
-from .. import features, models, transforms
+from .. import features, models, transforms, metrics
 from . import cleaning, utils
 from .cellprofiler import Cellprofiler
 
@@ -83,6 +83,22 @@ class BioImageDataFrame:
     #     **kwargs,
     # ):
     #     pass
+    def train_model(
+        self,
+        model,
+        variable="Cell",
+        groupby=None,
+        augment=None,
+        frac=0.8,
+    ):
+        return models.train_model(
+            df=self.df,
+            model=model,
+            variable=variable,
+            groupby=groupby,
+            augment=augment,
+            frac=frac,
+        )
 
     def get_score_report(
         self,
@@ -182,6 +198,32 @@ class BioImageDataFrame:
 
     def keeplevel(self, level):
         return utils.keeplevel(self.df, level)
+
+    def multikey_xs(self, key, level, *args, **kwargs):
+        return utils.multikey_xs(self.df, key=key, level=level, *args, **kwargs)
+
+    def pairwise_similarity(
+        self,
+        neg,
+        pos,
+        left_out,
+        level="Drug",
+        k_folds=5,
+        model=RandomForestClassifier(),
+        metric="js",
+        ci=None,
+    ):
+        return metrics.similarity.pairwise(
+            self.df,
+            neg=neg,
+            pos=pos,
+            left_out=left_out,
+            level=level,
+            k_folds=k_folds,
+            model=model,
+            metric=metric,
+            ci=ci,
+        )
 
     # # @functools.
     # # Needs python 3.9

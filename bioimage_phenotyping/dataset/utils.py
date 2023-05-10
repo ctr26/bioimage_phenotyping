@@ -1,12 +1,11 @@
-
 import numpy as np
 import pandas as pd
+from typing import List, Any
 
 
 from sklearn.decomposition import PCA
 
 # from sklearn.model_selection import train_test_split
-
 
 
 def drop_from_index(df, level):
@@ -105,3 +104,21 @@ def unique_levels(df, variable):
 
 def pca_fun(df, pca=PCA(n_components=10)):
     return pd.DataFrame(pca.fit_transform(np.array(df)), index=df.index)
+
+
+def multikey_xs(df, key: List[Any], level: str, *args, **kwargs):
+    # return pd.concat(
+    #     [
+    #         group
+    #         for label, group in df.groupby(key, level=level, *args, **kwargs)
+    #         if label in key
+    #     ]
+    # )
+    return pd.concat(
+        [
+            df.xs(label, level=level, *args, **kwargs)
+            for label in key
+            if label in df.index.get_level_values(level)
+        ],
+        axis=0,
+    )

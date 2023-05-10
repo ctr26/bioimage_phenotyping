@@ -10,7 +10,7 @@ def score_df_from_model(model, variable, X_test, y_test):
     )
 
     # scoring.groupby("Drug").
-    #TODO Fix this
+    # TODO Fix this
     ck = (
         scoring.groupby(variable, group_keys=False)
         .apply(lambda x: metrics.cohen_kappa_score(x["y_pred"], x[variable]))
@@ -40,23 +40,42 @@ def score_df_from_model(model, variable, X_test, y_test):
     return report_tall
 
 
+def train_model(
+    df,
+    model,
+    variable="Cell",
+    groupby=None,
+    augment=None,
+    frac=0.8
+):
+    X_train, X_test, y_train, y_test = train_test_split(
+        df=df, variable=variable, groupby=groupby, augment=augment,frac=frac,
+    )
+    model.fit(X_train.values, y_train)
+
+    return X_train, X_test, y_train, y_test
+
+
 def get_score_report(
     df,
     variable="Cell",
     groupby=None,
     augment=None,
     model=RandomForestClassifier(),
+    frac=0.8,
 ):
+    X_train, X_test, y_train, y_test = train_model(
+        df=df, variable="Cell", groupby=groupby, augment=augment, model=model
+    )
     # labels, uniques = pd.factorize(df.reset_index()[variable])
     # X, y = df, list(df.index.get_level_values(variable))
     # uniques =
     # X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y)
-    X_train, X_test, y_train, y_test = df.bip.train_test_split(
-        variable, groupby=groupby, augment=augment
+    X_train, X_test, y_train, y_test = train_test_split(
+        df=df, variable=variable, groupby=groupby, augment=augment, frac=frac
     )
     model.fit(X_train.values, y_train)
     return score_df_from_model(model, variable, X_test, y_test)
-
 
 
 def df_to_training_data(df, variable):
@@ -99,14 +118,13 @@ def get_scoring_df(
     return pd.concat(
         [
             (
-                get_score_report(df,
-                    variable=variable, model=model, groupby=groupby, augment=augment
+                get_score_report(
+                    df, variable=variable, model=model, groupby=groupby, augment=augment
                 ).assign(Fold=fold)
             )
             for fold in range(1, kfolds + 1)
         ]
     )
-
 
 
 def train_test_split(
@@ -117,7 +135,11 @@ def train_test_split(
 
     if groupby is not None:
         return groupby_train_split(
-            df, variable, groupby, frac=0.8, seed=42,
+            df,
+            variable,
+            groupby,
+            frac=frac,
+            seed=seed,
         )
 
     if augment is not None:
@@ -128,4 +150,3 @@ def train_test_split(
         return X_train, X_test, y_train, y_test
 
     return model_selection.train_test_split(X, y, stratify=y, random_state=seed)
-

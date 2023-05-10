@@ -34,6 +34,7 @@ dask = "^2023.3.1"
 scipy = ">=1.8,<1.9.2"
 distributed = "^2023.3.1"
 tk = "^0.1.0"
+tqdm = "^4.65.0"
 
 [tool.poetry.dev-dependencies]
 

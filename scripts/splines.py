@@ -11,7 +11,7 @@ import bioimage_phenotyping.dataset as dataset
 import bioimage_phenotyping.shapes as shapes
 from bioimage_phenotyping import Cellprofiler
 
-subprocess.run("make get.data", shell=True)
+# subprocess.run("make get.data", shell=True)
 
 # %% Imports
 
@@ -52,7 +52,7 @@ np.random.seed(42)
 
 from bioimage_phenotyping import Cellprofiler
 
-plt.ion()
+# plt.ion()
 
 VARIABLES = ["Conc /uM", "Date", "Drug"]
 SAVE_FIG = True
