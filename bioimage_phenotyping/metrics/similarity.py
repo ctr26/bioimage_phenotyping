@@ -31,9 +31,9 @@ def pairwise(
     X_train, X_test, y_train, y_test = df_blind.pipe(
         models.train_model,
         model,
-        variable="Drug",
+        variable=level,
         frac=0.8,
-        groupby="Drug",
+        groupby=level,
         augment=None,
     )
     # similarity, conf_int = 
