@@ -71,10 +71,42 @@ print(
     f'Organoids: {df.xs("Organoid",level="Population type").bip.simple_counts()}',
     f'Nuclei: {df.xs("Nuclei",level="Population type").bip.simple_counts()}',
 )
+# %% Concentration dependent study
+info = "concentration_dependence"
+print(info)
+from bioimage_phenotyping.metrics.regression import calculate_regression_score
+
+
+data = (
+    df.groupby(level="Drug").apply(
+        calculate_regression_score, level="Conc /uM", metric="js", ci=None
+    )
+).rename("Score")
+
+sns.lmplot(
+    x="Conc /uM",
+    y="Score",
+    fit_reg=False,
+    hue="Drug",
+    col="Drug",
+    data=data.reset_index(),
+    x_bins=100,
+    col_wrap=2,
+)
+if SAVE_FIG:
+    plt.savefig(metadata(f"{info}.pdf"))
+if SHOW_PLOTS:
+    plt.show()
+else:
+    plt.close()
+
+
+
 
 # %%
 
 info = "finger_prints"
+print(info)
 features.plotting.df_to_fingerprints(
     df.xs("Nuclei", level="Population type"), index_by="Drug", median_height=1
 )
@@ -96,6 +128,7 @@ lower = np.nanmean(df.values.flatten()) - 3 * np.nanstd(df.values.flatten())
 
 info = "fingerprints_cells"
 
+print(info)
 g = sns.FacetGrid(
     df.reset_index(level="Cell"),
     # row="Drug",
@@ -128,12 +161,11 @@ if SHOW_PLOTS:
 else:
     plt.close()
 
-print(info)
 # %% Cell and drug fingerprints
 
 
 info = "fingerprints_drugs"
-
+print(info)
 sns.set()
 g = sns.FacetGrid(
     df.reset_index(level=["Cell", "Drug"]),
@@ -167,12 +199,12 @@ if SHOW_PLOTS:
 else:
     plt.close()
 
-print(info)
 
 
 # %%
 
 info = "importance_median_control_points"
+print(info)
 plt.figure(figsize=(3, 50))
 sns.barplot(
     y="Feature",
@@ -192,7 +224,6 @@ if SHOW_PLOTS:
 else:
     plt.close()
 
-print(info)
 # %%
 # sns.barplot(
 #     y="Feature", x="Cumulative Importance",
@@ -571,22 +602,26 @@ df.bip.pairwise_similarity(
 # )
 
 
-def pairwise_matrix(level="Drug", metric="js",ci=None):
+def pairwise_matrix(level="Drug", metric="js", ci=None):
     labels = df.index.get_level_values(level).unique()
 
     index = pd.MultiIndex.from_product([labels, labels], names=["pos", "left_out"])
     # df_sim = pd.DataFrame(index=index)
     # TODO return ci or all divergences
-    return pd.Series(index=index,name=metric).groupby(["pos", "left_out"]).apply(
-        lambda group: (
-            df.bip.pairwise_similarity(
-                neg="Control",
-                pos=group.name[0],
-                left_out=group.name[1],
-                level="Drug",
-                metric="js",
-                ci=ci,
-            )[0]
+    return (
+        pd.Series(index=index, name=metric)
+        .groupby(["pos", "left_out"])
+        .apply(
+            lambda group: (
+                df.bip.pairwise_similarity(
+                    neg="Control",
+                    pos=group.name[0],
+                    left_out=group.name[1],
+                    level="Drug",
+                    metric="js",
+                    ci=ci,
+                )[0]
+            )
         )
     )
 
@@ -609,18 +644,19 @@ info = "drug_similarity"
 #         plt.close()
 
 
-
-
-df_a =  pairwise_matrix(level="Drug", metric="js")
+df_a = pairwise_matrix(level="Drug", metric="js")
 
 metrics = ["js", "kl"]
 # df_sim = pd.DataFrame(columns=metrics)
-df_sim.apply(lambda x: pd.Series([1,1]))
+df_sim.apply(lambda x: pd.Series([1, 1]))
 
-df_sim = pd.concat([pairwise_matrix(level="Drug", metric=metric,ci=None) for metric in metrics])
+df_sim = pd.concat(
+    [pairwise_matrix(level="Drug", metric=metric, ci=None) for metric in metrics]
+)
 
 df_sim
 # for metric in metrics:
+metric = metrics[0]
 df_sim[metric] = pairwise_matrix(level="Drug", metric=metric)
 
 # df_sim = df_sim.stack().reset_index()
@@ -651,6 +687,10 @@ else:
 # %% Concentration dependent study
 info = "concentration_dependence"
 #
+concs = df.index.get_level_values("Conc /uM")
+conc_score = df.bip.pairwise_similarity(
+    neg=concs.min(), pos=concs.max(), left_out=concs[1], level="Conc /uM", metric="js"
+)
 
 plot = sns.catplot(
     x="Kind",

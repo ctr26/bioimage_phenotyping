@@ -114,11 +114,20 @@ def multikey_xs(df, key: List[Any], level: str, *args, **kwargs):
     #         if label in key
     #     ]
     # )
-    return pd.concat(
-        [
+    dfs = [
             df.xs(label, level=level, *args, **kwargs)
             for label in key
             if label in df.index.get_level_values(level)
-        ],
-        axis=0,
-    )
+        ]
+    if len(dfs) == 0:
+        return pd.DataFrame()
+    else:
+        return pd.concat(dfs, axis=0)
+    # return pd.concat(
+    #     [
+    #         df.xs(label, level=level, *args, **kwargs)
+    #         for label in key
+    #         if label in df.index.get_level_values(level)
+    #     ],
+    #     axis=0,
+    # )
