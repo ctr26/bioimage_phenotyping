@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier, BaggingClassifier
 from sklearn import model_selection
 
+import numpy as np
 
 def score_df_from_model(model, variable, X_test, y_test):
     scoring = X_test.apply(lambda x: model.predict([x])[0], axis=1).reset_index(
@@ -48,6 +49,8 @@ def train_model(
     augment=None,
     frac=0.8
 ):
+    if df.empty:
+        return None
     X_train, X_test, y_train, y_test = train_test_split(
         df=df, variable=variable, groupby=groupby, augment=augment,frac=frac,
     )
@@ -130,6 +133,8 @@ def get_scoring_df(
 def train_test_split(
     df, variable="Cell", frac=0.8, augment=None, groupby=None, seed=42
 ):
+    if df.empty:
+        return None
     X = df
     y = df.index.to_frame()[[variable]].astype(str)
 

@@ -3,7 +3,7 @@ from scipy.stats import entropy
 from scipy.spatial.distance import euclidean
 import numpy as np
 from scipy.stats import t
-
+import pandas as pd
 from .. import models
 from ..dataset import utils
 
@@ -27,7 +27,12 @@ def pairwise(
     df_left_out = df_all_labels.xs(left_out, level=level, drop_level=False)
 
     df_blind = utils.multikey_xs(df, [neg, pos], level=level, drop_level=False)
-
+    if df_blind.empty:
+        if ci is None:
+            return pd.NA
+        if ci is not None:
+            return pd.NA, pd.NA
+    
     X_train, X_test, y_train, y_test = df_blind.pipe(
         models.train_model,
         model,
