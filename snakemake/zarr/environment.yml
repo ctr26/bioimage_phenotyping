@@ -1,0 +1,18 @@
+name: plast_cell
+channels:
+  - conda-forge
+  - bioconda
+  - ome
+dependencies:
+  - python=3.9
+  - mamba
+  - pip
+  - bioformats
+  - pims
+  - snakemake
+  - bioformats2raw
+  - napari
+  - napari-ome-zarr
+  - pip:
+    - napari-ome-zarr
+     - -e .

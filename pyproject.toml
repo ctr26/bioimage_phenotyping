@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "cellesce"
+name = "bip"
 version = "0.1.0"
 description = ""
 authors = ["ctr26 <ctr26@ebi.ac.uk>"]
@@ -34,7 +34,17 @@ dask = "^2023.3.1"
 scipy = ">=1.8,<1.9.2"
 distributed = "^2023.3.1"
 tk = "^0.1.0"
+pims = "^0.6.1"
+jpype1 = "^1.4.1"
+slicerator = "^1.1.0"
+bioformats-jar = "^2020.5.27"
+scyjava = "^1.9.0"
+torch = {version = "^2.0.0", extras = ["torch"], optional = true }
+albumentations = {version = "^1.3.0", extras = ["torch"], optional = true}
+torchvision = {version = "^0.15.1", extras = ["torch"], optional = true}
+bioimageio-core = "^0.5.8"
 tqdm = "^4.65.0"
+
 
 [tool.poetry.dev-dependencies]
 
@@ -50,3 +60,6 @@ build-backend = "poetry.core.masonry.api"
 pythonpath = [
   "."
 ]
+
+[tool.poetry.extras]
+torch = ["torch", "albumentations", "torchvision"]

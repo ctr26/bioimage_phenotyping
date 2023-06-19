@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "plast-cell"
+version = "0.1.0"
+description = ""
+authors = ["ctr26"]
+readme = "README.md"
+packages = [{include = "plast_cell"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pillow = "^9.4.0"
+pims = "^0.6.1"
+jpype1 = "^1.4.1"
+ngff-zarr = "^0.2.0"
+omero-cli-zarr = "^0.5.1"
+matplotlib = "^3.7.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
